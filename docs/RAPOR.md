@@ -25,7 +25,7 @@ edildi (bkz. CHANGELOG "devam 3"). Detaylar için bölüm 7 ve 9'a bakın.
 | 3 | `main.js` her sayfada `initSearch()` çağırıyordu | Arama kutusu olmayan sayfalarda (`hesap.html`) tüm `DOMContentLoaded` zinciri kopuyordu | Arama kutusu varlığı kontrol edilip koşullu çağrılıyor |
 | 4 | İki paralel oturum sistemi: `js/auth.js` (localStorage) + Firebase | Giriş yapınca navbar güncellenmiyor, sipariş kaydı tutarsız | Tek Firebase tabanlı ES module'de birleştirildi |
 | 5 | `hakkimizda.html` tanımsız CSS değişkenleri kullanıyordu (`--bg-alt`, `--bg-body`) | Sayfanın bir kısmı transparan/varsayılan renk basıyordu | Tanımlı karşılıklarıyla değiştirildi |
-| 6 | Admin panel şifresi client-side hardcoded (`admin` / `efemi2024`) | Herkes `admin.html` kaynağını görüp giriş yapabilir | **Faz 5'te** backend'e taşınacak, şimdilik değişmedi — aşağıda not var |
+| 6 | Admin panel şifresi client-side hardcoded (`admin` / `efemi2024`) | Herkes `admin.html` kaynağını görüp giriş yapabilir | **Çözüldü (2026-08-15):** Firebase Authentication + "admin" custom claim'e taşındı, bkz. `CHANGELOG.md` |
 
 ### 1.2 "Şifremi unuttum çalışmıyor, doğrulama maili ulaşmıyor" — kök neden
 
@@ -205,14 +205,14 @@ Faz 3 (tasarım yükseltmesi) ve **Faz 4 (SEO, güvenlik header, yasal metinler,
 `mesafeli-satis-sozlesmesi.html`, `iptal-iade.html`) + checkout onay checkbox'ı, KDV Dahil
 ibaresi.
 
-**Faz 5 (Backend/iyzico/admin auth), Faz 6 (admin panel Firestore+Storage) ve Faz 7 (mobil app)
-bu oturumda YAPILMADI** — bunlar kullanıcının kendi Vercel/Firebase hesabına, kendi AI
-asistanıyla yapılacak (hesap erişimi + gerçek merchant/Firebase Console ayarları gerektiriyor).
-Bu üç fazın tamamı, doğrudan bir AI'ya yapıştırılabilir prompt'lar hâlinde
-**`ARKADAS-YAPILACAKLAR.md`** dosyasına yazıldı — oradan devam edilmeli. Mevcut Firebase
-entegrasyonu (`js/firebase-config.js`, `js/firebase-auth.js`, `firestore.rules`) bu oturumda
-incelendi, bilinen bir hata bulunmadı; sadece eksik özellikler var (admin auth yok, ürünler
-Firestore'da değil, misafir siparişleri hiçbir yere yazılmıyor, ödeme tamamen simülasyon).
+**Faz 5 (Backend/iyzico/admin auth) bu oturumda YAPILMADI, sonraki bir oturumda (2026-08-15)
+tamamlandı** — gerçek iyzico 3DS entegrasyonu (`api/`), admin panelinin Firebase Auth + "admin"
+custom claim'e taşınması ve sipariş yönetiminin Firestore `orders` koleksiyonuna geçirilmesi
+yapıldı, detaylar için `CHANGELOG.md`. **Faz 6 (admin panel ürün yönetimi Firestore+Storage) ve
+Faz 7 (mobil app) hâlâ YAPILMADI** — ürünler hâlâ `js/data.js` sabit dizisinde, admin panelden
+eklenen ürünler hâlâ `localStorage`'da. Bunlar kullanıcının kendi Vercel/Firebase hesabına,
+gerçek merchant/Firebase Console ayarları gerektiriyor; kalan adımlar
+**`ARKADAS-YAPILACAKLAR.md`** dosyasında güncel haliyle listeleniyor.
 
 ### Devam prompt'u (yeni konuşmada `/clear` sonrası yapıştır — sadece bu repo üzerinde
 kod/tasarım işi için; Vercel/Firebase hesabı gerektiren işler için `ARKADAS-YAPILACAKLAR.md`

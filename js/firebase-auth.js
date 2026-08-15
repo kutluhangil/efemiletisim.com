@@ -20,7 +20,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 import {
-  doc, setDoc, getDoc, deleteDoc, updateDoc, arrayUnion, serverTimestamp,
+  doc, setDoc, getDoc, deleteDoc, updateDoc, serverTimestamp,
   collection, addDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -222,38 +222,6 @@ async function deleteUserAccount(password) {
   }
 }
 
-/* ─── Firestore: sipariş kaydet ─── */
-async function saveOrderToFirestore(uid, orderData) {
-  try {
-    const order = {
-      id:          "EFM" + Date.now().toString().slice(-6),
-      date:        new Date().toISOString(),
-      status:      "processing",
-      statusLabel: "Hazırlanıyor",
-      items:       orderData.items,
-      total:       orderData.total,
-      address:     orderData.address     || null,
-      invoice:     orderData.invoice     || null,
-      delivery:    orderData.delivery    || "kargo",
-      paymentMethod: orderData.paymentMethod || "kart",
-      paymentId:   orderData.paymentId   || null,
-      eftReceiptNo: orderData.eftReceiptNo || null,
-      trackingNumber: null
-    };
-
-    await updateDoc(doc(db, "users", uid), {
-      orders: arrayUnion(order)
-    });
-
-    return order;
-  } catch (err) {
-    throw new Error(
-      `Sipariş Firestore'a yazılamadı (uid: ${uid}, tutar: ${orderData.total}): ` +
-      `${err.code} – ${err.message}`
-    );
-  }
-}
-
 /* ─── Mail kuyruğuna yaz ───
    "mail" koleksiyonu firestore.rules tarafından korunur: hedef adres ya
    destek@efemiletisim.com ya da isteği yapan kullanıcının kendi e-postası olmalıdır.
@@ -270,26 +238,6 @@ async function queueMail(to, subject, html) {
     console.error(`[mail] Kuyruğa yazılamadı (to: ${to}): ${err.code} – ${err.message}`);
     return { success: false };
   }
-}
-
-/* ─── Sipariş onay maili (üyeye, kendi e-postasına) ─── */
-async function sendOrderConfirmationMail(order) {
-  const user = auth.currentUser;
-  if (!user?.email) return { success: false };
-
-  const itemsHtml = (order.items || [])
-    .map(i => `<li>${i.name} × ${i.qty} — ${i.price * i.qty} ₺</li>`)
-    .join('');
-
-  return queueMail(
-    user.email,
-    `Siparişiniz Alındı – ${order.id}`,
-    `<p>Merhaba,</p>
-     <p><strong>${order.id}</strong> numaralı siparişiniz alındı ve hazırlanıyor.</p>
-     <ul>${itemsHtml}</ul>
-     <p><strong>Toplam: ${order.total} ₺</strong></p>
-     <p>Bizi tercih ettiğiniz için teşekkür ederiz.<br>efem iletişim</p>`
-  );
 }
 
 /* ─── Destek/soru bildirim maili (herkes → destek@) ─── */
@@ -317,8 +265,6 @@ export {
   updateUserProfile,
   replaceUserAddresses,
   deleteUserAccount,
-  saveOrderToFirestore,
-  sendOrderConfirmationMail,
   sendSupportNotificationMail,
   onAuthChange,
   getCurrentFirebaseUser

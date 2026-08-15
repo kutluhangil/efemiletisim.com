@@ -34,49 +34,6 @@ function applyProductOverrides(products) {
   return products.map(p => overrides[p.id] ? { ...p, ...overrides[p.id] } : p);
 }
 
-/* ─── Sipariş defteri (localStorage) ───
-   Gerçek çoklu-cihaz sipariş yönetimi Firestore backend gerektirir (bkz.
-   docs/ARKADAS-YAPILACAKLAR.md — Prompt 3). Bu, o backend'e geçene kadar
-   admin panelinin AYNI TARAYICIDA verilen (üye + misafir) siparişleri
-   görüp durumunu güncelleyebilmesi için yerel bir defter. */
-const ORDERS_KEY = 'efemi_all_orders';
-
-function getAllOrders() {
-  try { return JSON.parse(localStorage.getItem(ORDERS_KEY)) || []; }
-  catch { return []; }
-}
-
-function saveAllOrders(orders) {
-  localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
-}
-
-/* order: saveOrderToFirestore/guest dalından dönen {id,date,status,...} nesnesi
-   meta: { source: 'member'|'guest', userId, customerName, customerEmail } */
-function addOrderToLedger(order, meta) {
-  const orders = getAllOrders();
-  orders.unshift({ ...order, ...meta });
-  saveAllOrders(orders);
-}
-
-function updateOrderStatus(orderId, status, statusLabel) {
-  const orders = getAllOrders();
-  const idx = orders.findIndex(o => o.id === orderId);
-  if (idx >= 0) {
-    orders[idx].status = status;
-    orders[idx].statusLabel = statusLabel;
-    saveAllOrders(orders);
-  }
-}
-
-function updateOrderTrackingNumber(orderId, trackingNumber) {
-  const orders = getAllOrders();
-  const idx = orders.findIndex(o => o.id === orderId);
-  if (idx >= 0) {
-    orders[idx].trackingNumber = trackingNumber;
-    saveAllOrders(orders);
-  }
-}
-
 /* ─── BASE_PRODUCTS: Sabit ürün listesi ─── */
 const BASE_PRODUCTS = [
 
@@ -670,4 +627,10 @@ function renderStars(rating) {
   const half  = rating % 1 >= 0.5 ? 1 : 0;
   const empty = 5 - full - half;
   return '★'.repeat(full) + (half ? '½' : '') + '☆'.repeat(empty);
+}
+
+/* ─── Node.js (Vercel Functions) tarafında BASE_PRODUCTS'a erişim ───
+   Tarayıcıda `module` tanımsız olduğu için bu blok atlanır, davranış değişmez. */
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { BASE_PRODUCTS };
 }

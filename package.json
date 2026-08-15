@@ -1,0 +1,18 @@
+{
+  "name": "efemiletisim-com",
+  "version": "1.0.0",
+  "private": true,
+  "description": "efemiletisim.com — statik e-ticaret sitesi + iyzico ödeme backend'i (Vercel Functions)",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev": "node dev-server.js",
+    "set-admin-claim": "node scripts/set-admin-claim.js",
+    "seed-products": "node scripts/seed-products.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.6.0",
+    "iyzipay": "^2.0.55"
+  }
+}

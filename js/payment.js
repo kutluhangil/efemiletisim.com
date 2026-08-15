@@ -1,73 +1,55 @@
 /* =========================================
-   efemiletisim.com – Ödeme (İyzico Simülasyon)
+   efemiletisim.com – Ödeme (gerçek iyzico 3D Secure entegrasyonu)
+   =========================================
+   Kart bilgisi bu dosyadan asla doğrudan işlenmez/saklanmaz — sadece
+   /api/create-payment'a iletilir (Vercel Function, iyzico'ya bağlanır).
+   Sipariş, 3DS onayından SONRA sunucu tarafında yazılır (bkz.
+   api/payment-callback.js). Bu dosya sadece: (1) backend'i çağırır,
+   (2) dönen 3DS HTML'ini decode eder, (3) EFT siparişini backend'e yollar.
    ========================================= */
 
-/* ─── İyzico Test Modu ─── */
-const IYZICO_CONFIG = {
-  mode:        'sandbox',
-  currency:    'TRY',
-  locale:      'tr',
-  apiKey:      'sandbox-TEST_KEY',
-  baseUrl:     'https://sandbox-api.iyzipay.com'
-};
+/* ─── Kart bilgisiyle ödeme başlat (3DS Initialize) ───
+   checkoutPayload: { items, address, invoice, delivery, couponCode }
+   Dönüş: { ok:true, conversationId } | { ok:false, error }
+   Banka 3DS HTML'i client'a hiç gönderilmez — iframe doğrudan
+   /api/threeds-frame?conversationId=...'e yönlendirilir (bkz. odeme.html
+   openThreeDsModal). Sebep: site CSP'si banka sayfasının kendi
+   script/domain'lerini engeller; ayrı bir endpoint kendi header'larıyla
+   bu sınırlamayı by-pass eder (bkz. api/threeds-frame.js). */
+async function initiateCardPayment(cardData, checkoutPayload) {
+  const idToken = await (window.getIdTokenSafe ? window.getIdTokenSafe() : null);
 
-/* ─── Ödeme durumları ─── */
-const PAYMENT_STATUS = {
-  PENDING:   'pending',
-  SUCCESS:   'success',
-  FAILED:    'failed',
-  CANCELLED: 'cancelled'
-};
-
-/* ─── Simüle ödeme işlemi ─── */
-function processPayment(cardData, amount, callback) {
-  // Loading göster
-  const btn = document.getElementById('pay-btn');
-  if (btn) {
-    btn.classList.add('loading');
-    btn.disabled = true;
-    btn.textContent = 'İşleniyor...';
+  try {
+    const res = await fetch('/api/create-payment', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ ...checkoutPayload, card: cardData, idToken })
+    });
+    const data = await res.json();
+    if (!res.ok) return { ok: false, error: data.error || 'Ödeme başlatılamadı.' };
+    return { ok: true, conversationId: data.conversationId };
+  } catch (err) {
+    console.error('[payment] create-payment isteği başarısız:', err);
+    return { ok: false, error: 'Sunucuya ulaşılamadı. İnternet bağlantınızı kontrol edin.' };
   }
-
-  // 1.5 sn simülasyon gecikmesi
-  setTimeout(() => {
-    const result = simulatePaymentResult(cardData, amount);
-    if (btn) {
-      btn.classList.remove('loading');
-      btn.disabled = false;
-    }
-    callback(result);
-  }, 1500);
 }
 
-/* ─── Ödeme sonucu simüle et ─── */
-function simulatePaymentResult(cardData, amount) {
-  // Test kartları
-  const testCards = {
-    '4111111111111111': 'success',
-    '5526080000000006': 'success',
-    '4000000000000002': 'failed',
-    '4000000000000077': 'failed'
-  };
+/* ─── EFT/Havale siparişi oluştur (kart/iyzico akışına girmez) ─── */
+async function submitEftOrder(checkoutPayload) {
+  const idToken = await (window.getIdTokenSafe ? window.getIdTokenSafe() : null);
 
-  const cleanNumber = cardData.number.replace(/\s/g, '');
-  const status = testCards[cleanNumber] || 'success'; // Bilinmeyen kart → başarılı
-
-  if (status === 'success') {
-    return {
-      status: PAYMENT_STATUS.SUCCESS,
-      conversationId: 'EFEMI' + Date.now(),
-      paymentId:      'PAY' + Math.random().toString(36).slice(2, 10).toUpperCase(),
-      amount,
-      currency: 'TRY',
-      paidPrice: amount
-    };
-  } else {
-    return {
-      status: PAYMENT_STATUS.FAILED,
-      errorCode:    '10051',
-      errorMessage: 'Kart limitiniz yetersiz. Lütfen başka bir kart deneyin.'
-    };
+  try {
+    const res = await fetch('/api/create-order', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ ...checkoutPayload, paymentMethod: 'eft', idToken })
+    });
+    const data = await res.json();
+    if (!res.ok) return { ok: false, error: data.error || 'Sipariş oluşturulamadı.' };
+    return { ok: true, order: data.order };
+  } catch (err) {
+    console.error('[payment] create-order isteği başarısız:', err);
+    return { ok: false, error: 'Sunucuya ulaşılamadı. İnternet bağlantınızı kontrol edin.' };
   }
 }
 
@@ -206,17 +188,17 @@ function showFormErrors(errors) {
   });
 }
 
-/* ─── Test kartları göster ─── */
+/* ─── Test kartları göster (iyzico resmi sandbox kartları) ─── */
 function showTestCards() {
   return `
     <div style="background:var(--surface-2);border-radius:var(--radius-md);padding:var(--space-4);font-size:0.8125rem;margin-top:var(--space-4)">
-      <div style="font-weight:700;margin-bottom:var(--space-2);color:var(--primary)">Test Kartları (Sandbox Modu)</div>
+      <div style="font-weight:700;margin-bottom:var(--space-2);color:var(--primary)">Test Kartları (Sandbox Modu — iyzico resmi test kartları)</div>
       <div style="display:grid;gap:var(--space-2)">
-        <div><svg class="icon icon-sm" viewBox="0 0 24 24" style="color:var(--success)"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9"/></svg> <code style="background:var(--surface);padding:2px 6px;border-radius:4px">4111 1111 1111 1111</code> → Başarılı ödeme</div>
-        <div><svg class="icon icon-sm" viewBox="0 0 24 24" style="color:var(--success)"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9"/></svg> <code style="background:var(--surface);padding:2px 6px;border-radius:4px">5526 0800 0000 0006</code> → Başarılı ödeme</div>
-        <div><svg class="icon icon-sm" viewBox="0 0 24 24" style="color:var(--error)"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg> <code style="background:var(--surface);padding:2px 6px;border-radius:4px">4000 0000 0000 0002</code> → Başarısız ödeme</div>
+        <div><svg class="icon icon-sm" viewBox="0 0 24 24" style="color:var(--success)"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9"/></svg> <code style="background:var(--surface);padding:2px 6px;border-radius:4px">5528 7900 0000 0008</code> → Başarılı ödeme (Mastercard)</div>
+        <div><svg class="icon icon-sm" viewBox="0 0 24 24" style="color:var(--error)"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg> <code style="background:var(--surface);padding:2px 6px;border-radius:4px">4111 1111 1111 1129</code> → Yetersiz bakiye</div>
+        <div><svg class="icon icon-sm" viewBox="0 0 24 24" style="color:var(--error)"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg> <code style="background:var(--surface);padding:2px 6px;border-radius:4px">4124 1111 1111 1116</code> → Geçersiz CVC</div>
       </div>
-      <div style="margin-top:var(--space-2);color:var(--text-muted)">Son Tarih: herhangi / CVV: herhangi 3 hane</div>
+      <div style="margin-top:var(--space-2);color:var(--text-muted)">Son Tarih: gelecekte herhangi bir tarih / CVV: herhangi 3 hane. Kaynak: docs.iyzico.com/testing</div>
     </div>
   `;
 }

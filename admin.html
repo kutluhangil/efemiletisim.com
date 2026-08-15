@@ -517,25 +517,26 @@
 
     <div class="auth-form" style="text-align:left">
       <div class="form-group">
-        <label class="form-label admin-login-label">Kullanıcı Adı</label>
-        <input type="text" class="form-input" id="admin-username" placeholder="admin"
+        <label class="form-label admin-login-label">E-posta</label>
+        <input type="email" class="form-input" id="admin-email" placeholder="admin@efemiletisim.com" autocomplete="username"
                onkeydown="if(event.key==='Enter') adminLogin()">
       </div>
       <div class="form-group">
         <label class="form-label admin-login-label">Şifre</label>
-        <input type="password" class="form-input" id="admin-password" placeholder="••••••••"
+        <input type="password" class="form-input" id="admin-password" placeholder="••••••••" autocomplete="current-password"
                onkeydown="if(event.key==='Enter') adminLogin()">
         <span class="form-error" id="admin-login-error"></span>
       </div>
-      <button class="btn btn-primary btn-block btn-lg" onclick="adminLogin()">
+      <button class="btn btn-primary btn-block btn-lg" id="admin-login-btn" onclick="adminLogin()">
         <svg class="icon" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Giriş Yap
       </button>
+      <button class="btn btn-ghost btn-block btn-sm" style="margin-top:8px;color:#94A3B8" onclick="adminForgotPassword()">Şifremi Unuttum</button>
     </div>
 
     <div class="admin-demo-info">
-      <strong>Demo Giriş Bilgileri:</strong><br>
-      Kullanıcı: <code>admin</code> &nbsp;
-      Şifre: <code>efemi2024</code>
+      Bu ekran Firebase Authentication ile korunur. Erişim, "admin" custom claim'i
+      atanmış gerçek bir Firebase hesabı gerektirir — bkz.
+      <code>scripts/set-admin-claim.js</code>.
     </div>
   </div>
 </div>
@@ -672,7 +673,7 @@
           <div id="recent-orders">
             <div class="admin-empty-state">
               <svg class="icon" viewBox="0 0 24 24"><path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
-              <div>Henüz bu tarayıcıdan verilmiş bir sipariş yok.</div>
+              <div>Henüz sipariş yok.</div>
             </div>
           </div>
         </div>
@@ -850,19 +851,15 @@
 
       <div class="admin-card" style="max-width:480px">
         <div class="admin-card-header">
-          <span class="admin-card-title">Kurtarma Bilgileri</span>
+          <span class="admin-card-title">Şifremi Unuttum</span>
         </div>
         <div class="auth-form" style="padding:24px">
-          <p class="admin-hint-text" style="margin:-8px 0 0">Şifrenizi unutursanız sizinle bu bilgilerle iletişime geçilir.</p>
-          <div class="form-group">
-            <label class="form-label">Kurtarma E-postası</label>
-            <input type="email" class="form-input" id="settings-recovery-email" placeholder="ornek@mail.com" autocomplete="email">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Telefon Numarası</label>
-            <input type="tel" class="form-input" id="settings-recovery-phone" placeholder="05XX XXX XX XX" autocomplete="tel">
-          </div>
-          <button class="btn btn-secondary" onclick="handleAdminRecoveryInfoSave()">Kaydet</button>
+          <p class="admin-hint-text" style="margin:-8px 0 0">
+            Şifre kurtarma Firebase Authentication üzerinden gerçek e-posta ile yapılır —
+            giriş ekranındaki "Şifremi Unuttum" bağlantısını kullanın. Yeni bir admin
+            hesabı eklemek veya bir hesabın admin yetkisini kaldırmak için
+            <code>scripts/set-admin-claim.js</code> çalıştırılır.
+          </p>
         </div>
       </div>
     </section>
@@ -1068,68 +1065,158 @@
 <script src="js/site-config.js"></script>
 <script src="js/data.js"></script>
 <script src="js/cart.js"></script>
-<script type="module" src="js/auth.js"></script>
 <script src="js/main.js"></script>
-<script>
+<script type="module">
 /* ════════════════════════════
-   ADMIN AUTH
-════════════════════════════ */
-const ADMIN_CREDS = { username: 'admin', password: 'efemi2024' };
-const ADMIN_SESSION_KEY  = 'efemi_admin_session';
-const ADMIN_SETTINGS_KEY = 'efemi_admin_settings';
+   ADMIN AUTH (Firebase Authentication + "admin" custom claim)
+   ════════════════════════════
+   admin.html js/auth.js'in oturum yönetimini KULLANMAZ: firebaseLogin()
+   e-posta doğrulaması zorunlu tutuyor (müşteri akışı için doğru), admin
+   hesabı için bu şart uygun değil. Bunun yerine doğrudan Firebase Auth SDK
+   ile giriş yapılır, yetki "admin" custom claim'inin ID token'da olup
+   olmamasına göre verilir (claim atama: scripts/set-admin-claim.js). */
+import {
+  signInWithEmailAndPassword, onAuthStateChanged, signOut,
+  EmailAuthProvider, reauthenticateWithCredential, updatePassword,
+  sendPasswordResetEmail
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  collection, query, orderBy, getDocs, doc, updateDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { auth, db } from './js/firebase-config.js';
 
-/* ─── Admin ayarları (şifre override, kurtarma e-postası/telefon) ───
-   Demo seviyesi client-side depolama — ürünler/siparişler gibi bu da
-   localStorage'da tutulur (bkz. docs/ARKADAS-YAPILACAKLAR.md Prompt 2,
-   admin auth'un Firebase Auth'a taşınması planı). */
-function getAdminSettings() {
-  try { return JSON.parse(localStorage.getItem(ADMIN_SETTINGS_KEY)) || {}; }
-  catch { return {}; }
+let adminUser   = null;
+let ordersCache = [];
+
+/* ─── Siparişler: Firestore `orders` koleksiyonu (bkz. api/_lib/orders.js) ───
+   admin.html'in geri kalanı (renderOrdersTable, filterOrdersTable, dashboard
+   istatistikleri) senkron `getAllOrders()` bekliyor — bu yüzden veriler bir
+   kez Firestore'dan çekilip ordersCache'e alınır, senkron okuma o cache'ten
+   yapılır. Durum/kargo takip güncellemeleri Firestore'a yazılır. */
+async function loadOrdersFromFirestore() {
+  const q    = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+  const snap = await getDocs(q);
+  ordersCache = snap.docs.map(d => d.data());
+  return ordersCache;
 }
 
-function saveAdminSettings(settings) {
-  localStorage.setItem(ADMIN_SETTINGS_KEY, JSON.stringify(settings));
+function getAllOrders() {
+  return ordersCache;
 }
 
-function getAdminPassword() {
-  return getAdminSettings().password || ADMIN_CREDS.password;
+async function updateOrderStatus(orderId, status, statusLabel) {
+  await updateDoc(doc(db, 'orders', orderId), { status, statusLabel });
+  const idx = ordersCache.findIndex(o => o.id === orderId);
+  if (idx >= 0) { ordersCache[idx].status = status; ordersCache[idx].statusLabel = statusLabel; }
 }
 
-function adminLogin() {
-  const u = document.getElementById('admin-username').value.trim();
-  const p = document.getElementById('admin-password').value;
+async function updateOrderTrackingNumber(orderId, trackingNumber) {
+  await updateDoc(doc(db, 'orders', orderId), { trackingNumber });
+  const idx = ordersCache.findIndex(o => o.id === orderId);
+  if (idx >= 0) ordersCache[idx].trackingNumber = trackingNumber;
+}
 
-  if (u === ADMIN_CREDS.username && p === getAdminPassword()) {
-    sessionStorage.setItem(ADMIN_SESSION_KEY, '1');
-    document.getElementById('admin-login').style.display   = 'none';
-    document.getElementById('admin-wrapper').classList.add('active');
-    document.body.style.background = '#F8FAFC';
-    initAdmin();
-  } else {
-    document.getElementById('admin-login-error').textContent = 'Kullanıcı adı veya şifre hatalı.';
+async function adminLogin() {
+  const email    = document.getElementById('admin-email').value.trim();
+  const password = document.getElementById('admin-password').value;
+  const errEl    = document.getElementById('admin-login-error');
+  const btn      = document.getElementById('admin-login-btn');
+  errEl.textContent = '';
+
+  if (!email || !password) {
+    errEl.textContent = 'E-posta ve şifre girin.';
+    return;
+  }
+
+  btn.disabled = true;
+  try {
+    const cred = await signInWithEmailAndPassword(auth, email, password);
+    const tokenResult = await cred.user.getIdTokenResult();
+    if (tokenResult.claims.admin !== true) {
+      await signOut(auth);
+      errEl.textContent = 'Bu hesabın admin yetkisi yok.';
+    }
+    // Yetki varsa onAuthStateChanged devreye girip paneli açar.
+  } catch (err) {
+    errEl.textContent = 'E-posta veya şifre hatalı.';
+  } finally {
+    btn.disabled = false;
   }
 }
 
-function adminLogout() {
-  sessionStorage.removeItem(ADMIN_SESSION_KEY);
-  location.reload();
+async function adminLogout() {
+  await signOut(auth);
 }
 
+async function adminForgotPassword() {
+  const email = document.getElementById('admin-email').value.trim();
+  const errEl = document.getElementById('admin-login-error');
+  if (!email) {
+    errEl.textContent = 'Önce e-posta adresinizi girin.';
+    return;
+  }
+  try {
+    await sendPasswordResetEmail(auth, email);
+    errEl.style.color = 'var(--success)';
+    errEl.textContent = 'Şifre sıfırlama bağlantısı e-postanıza gönderildi.';
+  } catch {
+    errEl.style.color = '';
+    errEl.textContent = 'Gönderilemedi. E-posta adresini kontrol edin.';
+  }
+}
+
+/* ─── Firebase reauth + gerçek şifre değişimi ─── */
+async function changeAdminPassword(currentPassword, newPassword) {
+  if (!adminUser) return { success: false, msg: 'Oturum bulunamadı.' };
+  try {
+    const credential = EmailAuthProvider.credential(adminUser.email, currentPassword);
+    await reauthenticateWithCredential(adminUser, credential);
+    await updatePassword(adminUser, newPassword);
+    return { success: true };
+  } catch (err) {
+    const msg = err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password'
+      ? 'Mevcut şifre hatalı.'
+      : `Şifre güncellenemedi: ${err.code}`;
+    return { success: false, msg };
+  }
+}
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    adminUser = null;
+    document.getElementById('admin-login').style.display = 'flex';
+    document.getElementById('admin-wrapper').classList.remove('active');
+    return;
+  }
+
+  const tokenResult = await user.getIdTokenResult();
+  if (tokenResult.claims.admin !== true) {
+    // Admin olmayan bir Firebase oturumu (ör. başka sekmede müşteri girişi) —
+    // panel bu oturumu kabul etmez.
+    await signOut(auth);
+    return;
+  }
+
+  adminUser = user;
+  document.getElementById('admin-login').style.display   = 'none';
+  document.getElementById('admin-wrapper').classList.add('active');
+  document.body.style.background = '#F8FAFC';
+  await loadOrdersFromFirestore();
+  window.initAdmin();
+});
+
+Object.assign(window, {
+  adminLogin, adminLogout, adminForgotPassword, changeAdminPassword,
+  loadOrdersFromFirestore, getAllOrders, updateOrderStatus, updateOrderTrackingNumber,
+  getAdminEmail: () => adminUser?.email || ''
+});
+</script>
+<script>
 /* ════════════════════════════
    INIT
 ════════════════════════════ */
-document.addEventListener('DOMContentLoaded', () => {
-  if (sessionStorage.getItem(ADMIN_SESSION_KEY)) {
-    document.getElementById('admin-login').style.display   = 'none';
-    document.getElementById('admin-wrapper').classList.add('active');
-    document.body.style.background = '#F8FAFC';
-    initAdmin();
-  }
-
-  // Enter ile giriş
-  document.getElementById('admin-password')?.addEventListener('keydown', e => {
-    if (e.key === 'Enter') adminLogin();
-  });
+document.getElementById('admin-password')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') adminLogin();
 });
 
 function initAdmin() {
@@ -1139,7 +1226,7 @@ function initAdmin() {
   renderProductsTable(PRODUCTS);
   renderOrdersTable();
   document.getElementById('admin-greeting').textContent =
-    `Hoş geldiniz, Admin! — ${new Date().toLocaleDateString('tr-TR', { weekday:'long', day:'numeric', month:'long' })}`;
+    `Hoş geldiniz${window.getAdminEmail ? ', ' + window.getAdminEmail() : ''}! — ${new Date().toLocaleDateString('tr-TR', { weekday:'long', day:'numeric', month:'long' })}`;
   document.getElementById('nav-product-count').textContent = PRODUCTS.length;
 }
 
@@ -1177,7 +1264,7 @@ function renderDashboard() {
     recentOrdersEl.innerHTML = `
       <div class="admin-empty-state">
         <svg class="icon" viewBox="0 0 24 24"><path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
-        <div>Henüz bu tarayıcıdan verilmiş bir sipariş yok.</div>
+        <div>Henüz sipariş yok.</div>
       </div>`;
   } else {
     recentOrdersEl.innerHTML = `
@@ -1395,7 +1482,7 @@ function renderOrdersTable(orders) {
   if (list.length === 0) {
     body.innerHTML = `<tr><td colspan="8"><div class="admin-empty-state">
       <svg class="icon" viewBox="0 0 24 24"><path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
-      <div>Henüz bu tarayıcıdan verilmiş bir sipariş yok.</div>
+      <div>Henüz sipariş yok.</div>
     </div></td></tr>`;
     return;
   }
@@ -1453,8 +1540,8 @@ function filterOrdersTable() {
   renderOrdersTable(filtered);
 }
 
-function changeOrderStatus(orderId, status) {
-  updateOrderStatus(orderId, status, ORDER_STATUS_LABELS[status]);
+async function changeOrderStatus(orderId, status) {
+  await updateOrderStatus(orderId, status, ORDER_STATUS_LABELS[status]);
   filterOrdersTable();
   renderDashboard();
   showToast('Sipariş durumu güncellendi.', 'success');
@@ -1514,7 +1601,7 @@ function openOrderModal(orderId) {
     <div style="text-align:right;font-size:1.125rem;margin-bottom:20px"><strong>Genel Toplam: ${formatPrice(order.total)}</strong></div>
 
     <div class="admin-section-label">Durum</div>
-    <select class="form-select" style="margin-bottom:12px" onchange="changeOrderStatus('${order.id}', this.value); openOrderModal('${order.id}')">
+    <select class="form-select" style="margin-bottom:12px" onchange="changeOrderStatus('${order.id}', this.value).then(() => openOrderModal('${order.id}'))">
       ${Object.entries(ORDER_STATUS_LABELS).map(([val, label]) =>
         `<option value="${val}" ${order.status === val ? 'selected' : ''}>${label}</option>`).join('')}
     </select>
@@ -1549,9 +1636,9 @@ function buildCancellationMailto(order) {
   return `mailto:${order.customerEmail}?subject=${subject}&body=${body}`;
 }
 
-function saveTrackingNumber(orderId) {
+async function saveTrackingNumber(orderId) {
   const value = document.getElementById('order-tracking-input').value.trim();
-  updateOrderTrackingNumber(orderId, value || null);
+  await updateOrderTrackingNumber(orderId, value || null);
   showToast('Kargo takip numarası kaydedildi.', 'success');
 }
 
@@ -1797,24 +1884,24 @@ function confirmModalAction() {
 /* ════════════════════════════
    YARDIMCI FONKSİYONLAR
 ════════════════════════════ */
-function showSection(name) {
+async function showSection(name) {
   document.querySelectorAll('.admin-wrapper > .admin-main > section').forEach(s => s.style.display = 'none');
   document.getElementById('section-' + name).style.display = 'block';
   document.querySelectorAll('.admin-nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('nav-' + name)?.classList.add('active');
   if (name === 'settings') populateAdminSettingsForm();
+  if (name === 'orders') {
+    await loadOrdersFromFirestore();
+    filterOrdersTable();
+  }
 }
 
 /* ════════════════════════════
    AYARLAR
 ════════════════════════════ */
-function populateAdminSettingsForm() {
-  const settings = getAdminSettings();
-  document.getElementById('settings-recovery-email').value = settings.recoveryEmail || '';
-  document.getElementById('settings-recovery-phone').value = settings.phone || '';
-}
+function populateAdminSettingsForm() { /* Firebase Auth zaten oturumdan okunuyor, ekstra form doldurma yok */ }
 
-function handleAdminPasswordChange() {
+async function handleAdminPasswordChange() {
   const currentEl = document.getElementById('settings-current-password');
   const newEl     = document.getElementById('settings-new-password');
   const new2El    = document.getElementById('settings-new-password2');
@@ -1825,8 +1912,8 @@ function handleAdminPasswordChange() {
   currentErr.textContent = ''; newErr.textContent = ''; new2Err.textContent = '';
 
   let valid = true;
-  if (currentEl.value !== getAdminPassword()) {
-    currentErr.textContent = 'Mevcut şifre hatalı.'; valid = false;
+  if (!currentEl.value) {
+    currentErr.textContent = 'Mevcut şifrenizi girin.'; valid = false;
   }
   if (newEl.value.length < 6) {
     newErr.textContent = 'Yeni şifre en az 6 karakter olmalıdır.'; valid = false;
@@ -1836,20 +1923,14 @@ function handleAdminPasswordChange() {
   }
   if (!valid) return;
 
-  const settings = getAdminSettings();
-  settings.password = newEl.value;
-  saveAdminSettings(settings);
+  const result = await changeAdminPassword(currentEl.value, newEl.value);
+  if (!result.success) {
+    currentErr.textContent = result.msg;
+    return;
+  }
 
   currentEl.value = ''; newEl.value = ''; new2El.value = '';
   showToast('Şifre güncellendi.', 'success');
-}
-
-function handleAdminRecoveryInfoSave() {
-  const settings = getAdminSettings();
-  settings.recoveryEmail = document.getElementById('settings-recovery-email').value.trim();
-  settings.phone         = document.getElementById('settings-recovery-phone').value.trim();
-  saveAdminSettings(settings);
-  showToast('Kurtarma bilgileri kaydedildi.', 'success');
 }
 
 function addSpecRow(key = '', value = '') {

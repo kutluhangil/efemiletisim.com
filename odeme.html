@@ -561,6 +561,19 @@
 
 <div id="toast-container"></div>
 
+<!-- 3D Secure Doğrulama Modalı -->
+<div class="modal-overlay" id="threeds-modal">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <strong>3D Secure Doğrulama</strong>
+      <button class="btn btn-ghost btn-sm" onclick="cancelThreeDs()" title="İptal">✕</button>
+    </div>
+    <div class="modal-body" style="padding:0">
+      <iframe id="threeds-iframe" title="3D Secure" style="width:100%;height:480px;border:0;display:block"></iframe>
+    </div>
+  </div>
+</div>
+
 <script src="js/site-config.js"></script>
 <script src="js/data.js"></script>
 <script src="js/cart.js"></script>
@@ -568,52 +581,6 @@
 <script src="js/payment.js"></script>
 <script src="js/main.js"></script>
 <script type="module" src="js/auth.js"></script>
-<script type="module">
-import { saveOrderToFirestore, sendOrderConfirmationMail } from './js/firebase-auth.js';
-import { authReady, isLoggedIn, getCurrentUser } from './js/auth.js';
-
-/* Ödeme sayfası hem üyelere hem misafirlere açıktır.
-   Misafir siparişlerinde sipariş kaydı Firestore'a yazılamaz; sipariş
-   numarası ve özeti kullanıcıya e-posta ile iletilmek üzere döndürülür. */
-window.saveOrder = async (orderData) => {
-  await authReady;
-
-  const addr = orderData.address || {};
-  const customerName  = [addr.ad, addr.soyad].filter(Boolean).join(' ') || null;
-  const customerEmail = addr.email || null;
-
-  let order;
-  let meta;
-
-  if (isLoggedIn()) {
-    order = await saveOrderToFirestore(getCurrentUser().uid, orderData);
-    if (!order) throw new Error('Sipariş Firestore\'a kaydedilemedi.');
-    meta = { source: 'member', userId: getCurrentUser().uid, customerName, customerEmail };
-    sendOrderConfirmationMail(order); // arka planda; başarısız olsa da sipariş akışını bloklamaz
-  } else {
-    order = {
-      id:            'EFM' + Date.now().toString().slice(-6),
-      date:          new Date().toISOString(),
-      status:        'processing',
-      statusLabel:   'Hazırlanıyor',
-      guest:         true,
-      items:         orderData.items,
-      total:         orderData.total,
-      address:       orderData.address       || null,
-      invoice:       orderData.invoice       || null,
-      delivery:      orderData.delivery      || 'kargo',
-      paymentMethod: orderData.paymentMethod || 'kart',
-      paymentId:     orderData.paymentId     || null,
-      eftReceiptNo:  orderData.eftReceiptNo  || null,
-      trackingNumber: null
-    };
-    meta = { source: 'guest', userId: null, customerName, customerEmail };
-  }
-
-  addOrderToLedger(order, meta);
-  return order;
-};
-</script>
 <script>
 let addressData  = null;
 let invoiceData  = null;
@@ -622,6 +589,21 @@ let deliveryMode = 'kargo';  // 'kargo' | 'magaza'
 let paymentMode  = 'kart';   // 'kart'  | 'eft'
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // 3DS callback'inden dönüş: tam sayfa yönlendirmesiyle geldiğimiz için
+  // sonuç query string üzerinden okunur (bkz. api/payment-callback.js).
+  const params    = new URLSearchParams(location.search);
+  const orderId   = params.get('order');
+  const failedRef = params.get('payment') === 'failed' ? (params.get('reason') || '') : null;
+
+  if (orderId) {
+    clearCart();
+    document.getElementById('order-id-display').textContent = `Sipariş No: ${orderId}`;
+    setStep(3);
+    showToast('Siparişiniz başarıyla alındı!', 'success');
+    history.replaceState(null, '', 'odeme.html');
+    return;
+  }
+
   const cart = getCart();
   if (cart.length === 0) { window.location.href = 'sepet.html'; return; }
 
@@ -633,6 +615,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('test-cards-info').innerHTML = showTestCards();
 
   setStep(1);
+
+  if (failedRef !== null) {
+    showToast('Ödeme tamamlanamadı' + (failedRef ? `: ${failedRef}` : '') + '. Lütfen tekrar deneyin.', 'error');
+    history.replaceState(null, '', 'odeme.html');
+  }
 
   // Oturum hazır olduğunda üye bilgilerini otomatik doldur
   await window.authReady;
@@ -917,6 +904,15 @@ function goToStep2() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+function checkoutPayload() {
+  return {
+    items:    getCart().map(i => ({ id: i.id, qty: i.qty })),
+    address:  addressData,
+    invoice:  invoiceData,
+    delivery: deliveryMode
+  };
+}
+
 async function handlePayment() {
   const termsError = document.getElementById('order-terms-error');
   if (!document.getElementById('order-terms').checked) {
@@ -927,23 +923,28 @@ async function handlePayment() {
   }
   termsError.style.display = 'none';
 
-  const total = getCartTotal();
+  const payBtn = document.getElementById('pay-btn');
 
   if (paymentMode === 'eft') {
-    // EFT siparişi
-    const order = await saveOrder({
-      items:         getCart(),
-      total:         total,
-      address:       addressData,
-      invoice:       invoiceData,
-      delivery:      deliveryMode,
-      paymentMethod: 'eft',
-      paymentId:     'EFT-PENDING-' + Date.now(),
-      eftReceiptNo:  document.getElementById('eft-dekont-no').value.trim() || null
+    payBtn.disabled = true;
+    payBtn.textContent = 'İşleniyor...';
+
+    const result = await submitEftOrder({
+      ...checkoutPayload(),
+      eftReceiptNo: document.getElementById('eft-dekont-no').value.trim() || null
     });
+
+    payBtn.disabled = false;
+    payBtn.textContent = 'Siparişi Onayla (EFT ile Öde)';
+
+    if (!result.ok) {
+      showToast('Sipariş oluşturulamadı: ' + result.error, 'error');
+      return;
+    }
+
     clearCart();
     document.getElementById('order-id-display').textContent =
-      `Sipariş No: ${order.id} · EFT ile ödeme bekleniyor`;
+      `Sipariş No: ${result.order.id} · EFT ile ödeme bekleniyor`;
     setStep(3);
     showToast('Siparişiniz oluşturuldu! EFT transferi sonrası onaylanacak.', 'success');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -965,32 +966,41 @@ async function handlePayment() {
     return;
   }
 
-  processPayment(cardData, total, async (result) => {
-    if (result.status === 'success') {
-      const order = await saveOrder({
-        items:         getCart(),
-        total:         total,
-        address:       addressData,
-        invoice:       invoiceData,
-        delivery:      deliveryMode,
-        paymentMethod: 'kart',
-        paymentId:     result.paymentId
-      });
+  payBtn.classList.add('loading');
+  payBtn.disabled = true;
+  payBtn.textContent = 'İşleniyor...';
 
-      clearCart();
+  const result = await initiateCardPayment(cardData, checkoutPayload());
 
-      document.getElementById('order-id-display').textContent = `Sipariş No: ${order.id}`;
+  payBtn.classList.remove('loading');
+  payBtn.disabled = false;
+  payBtn.textContent = 'Siparişi Tamamla';
 
-      setStep(3);
-      showToast('Siparişiniz başarıyla alındı!', 'success');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else {
-      const payBtn = document.getElementById('pay-btn');
-      payBtn.textContent = 'Siparişi Tamamla';
-      payBtn.disabled = false;
-      showToast('Ödeme başarısız: ' + result.errorMessage, 'error');
-    }
-  });
+  if (!result.ok) {
+    showToast('Ödeme başlatılamadı: ' + result.error, 'error');
+    return;
+  }
+
+  openThreeDsModal(result.conversationId);
+}
+
+/* ─── 3D Secure modalı ───
+   Banka sayfası iframe içinde /api/threeds-frame'den yüklenir (kendi CSP'siyle,
+   bkz. api/threeds-frame.js — srcdoc KULLANILMAZ çünkü srcdoc/about:blank
+   içerik sitenin CSP'sini miras alır ve bankanın script/domain'lerini
+   engeller). Kullanıcı doğrulamayı tamamlayınca iyzico api/payment-callback.js'i
+   çağırır, o da üst pencereyi (window.top) odeme.html?order=... adresine
+   yönlendirir — bu sayfa o an yeniden yüklenir. */
+function openThreeDsModal(conversationId) {
+  const iframe = document.getElementById('threeds-iframe');
+  iframe.src = `/api/threeds-frame?conversationId=${encodeURIComponent(conversationId)}`;
+  document.getElementById('threeds-modal').classList.add('active');
+}
+
+function cancelThreeDs() {
+  document.getElementById('threeds-modal').classList.remove('active');
+  document.getElementById('threeds-iframe').src = 'about:blank';
+  showToast('Ödeme iptal edildi.', 'warning');
 }
 </script>
 </body>

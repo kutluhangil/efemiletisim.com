@@ -3,6 +3,35 @@
 Bu dosya projede yapılan her ekleme, değişiklik ve kaldırmayı kayıt altına alır.
 En yeni kayıtlar en üstte.
 
+## 2026-08-15 (devam 3)
+
+### Gerçek iyzico ödeme entegrasyonu, admin Firebase Auth, sipariş yönetimi Firestore'a taşındı
+- Add: `api/` altında Vercel Functions — `create-payment.js` (iyzico 3D Secure Initialize),
+  `payment-callback.js` (3DS finalize + sipariş yazımı), `payment-webhook.js`
+  (`X-IYZ-SIGNATURE-V3` doğrulamalı reconciliation), `create-order.js` (EFT sipariş).
+  `js/payment.js` artık kart bilgisini simüle etmiyor, gerçek backend'i çağırıyor.
+  `odeme.html`'e 3DS doğrulama modalı (iframe) eklendi.
+- Add: `api/_lib/pricing.js` — sepet toplamı `js/data.js` → `BASE_PRODUCTS`'tan sunucu
+  tarafında yeniden hesaplanıyor, client'ın gönderdiği fiyata güvenilmiyor (fiyat
+  manipülasyonu artık mümkün değil).
+- Add: `api/_lib/orders.js` — siparişler (üye + misafir) artık Firebase Admin SDK ile
+  Firestore `orders` koleksiyonuna sunucu tarafında yazılıyor; misafir siparişleri artık
+  kayboluyor değil, admin panelinde görünüyor. Client'ın Firestore'a doğrudan sahte
+  "başarılı sipariş" yazması artık mümkün değil (`firestore.rules` → `orders.create: false`).
+- Fix (CRITICAL): `admin.html` içindeki hardcoded admin şifresi (`admin`/`efemi2024`, sayfa
+  kaynağında düz metin) kaldırıldı. Admin girişi artık Firebase Authentication + "admin"
+  custom claim ile korunuyor (`scripts/set-admin-claim.js` ile atanıyor).
+- Change: `admin.html` Siparişler sekmesi artık `localStorage` yerine Firestore `orders`
+  koleksiyonundan okuyor — admin hangi cihazdan girerse girsin aynı siparişleri görür.
+- Remove: `js/data.js` içindeki localStorage tabanlı sipariş defteri
+  (`getAllOrders`/`addOrderToLedger`/vb.) ve `js/firebase-auth.js` içindeki client-side
+  `saveOrderToFirestore`/`sendOrderConfirmationMail` kaldırıldı (yerini backend aldı).
+- Fix: `gizlilik-kvkk.html` — "verileriniz yurt dışına aktarılmaz" ifadesi, sitenin fiilen
+  kullandığı Firebase/Google Cloud altyapısını yansıtacak şekilde düzeltildi.
+- Docs: `docs/ARKADAS-YAPILACAKLAR.md` tamamen güncellendi — artık sadece hesap erişimi
+  (iyzico sandbox anahtarı, Firebase admin hesabı, Vercel env değişkenleri) gerektiren
+  adımları listeliyor.
+
 ## 2026-08-15 (devam 2)
 
 ### Adres senkronu, 81 il, navbar dropdown bug, ürün fotoğrafları
