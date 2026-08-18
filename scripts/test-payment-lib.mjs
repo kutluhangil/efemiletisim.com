@@ -197,5 +197,121 @@ console.log('\nmetin temizleme');
   check('uzunluk sınırlanır', orders.clean('x'.repeat(500), 10).length, 10);
 }
 
+
+/* ─── İade ve durum sorgu servisleri ───
+   Her servisin imza alan sırası FARKLIDIR. Sıra yanlış olursa PayTR isteği
+   reddeder ama kod sessizce "başarısız" görünür; testler sırayı bağımsız
+   hesaplayarak sabitler. */
+
+console.log('\nkuruş ↔ ondalık dönüşümü (durum sorgu yanıtı)');
+{
+  check('"10.8" → kuruş',    paytr.kurusFromDecimal('10.8'),  1080);
+  check('"10.25" → kuruş',   paytr.kurusFromDecimal('10.25'), 1025);
+  check('"0.76" → kuruş',    paytr.kurusFromDecimal('0.76'),    76);
+  check('virgüllü değer',    paytr.kurusFromDecimal('10,25'), 1025);
+  check('boş değer null',    paytr.kurusFromDecimal(''),      null);
+  check('sayı olmayan null', paytr.kurusFromDecimal('abc'),   null);
+  // Kayan nokta tuzağı: 10.8 * 100 = 1080.0000000000001
+  check('kayan nokta hatası yuvarlanır', Number.isInteger(paytr.kurusFromDecimal('10.8')), true);
+}
+
+console.log('\niade imzası (merchant_id + merchant_oid + return_amount + merchant_salt)');
+{
+  const fields = { merchant_oid: 'EFM2608181A2B3C', return_amount: '149.90' };
+  const expected = crypto
+    .createHmac('sha256', cfg.merchantKey)
+    .update(cfg.merchantId + fields.merchant_oid + fields.return_amount + cfg.merchantSalt)
+    .digest('base64');
+
+  check('iade imzası doğru üretiliyor', paytr.refundHash(fields, cfg), expected);
+
+  // Alan sırası bozulursa imza DEĞİŞMELİ
+  const wrongOrder = crypto
+    .createHmac('sha256', cfg.merchantKey)
+    .update(cfg.merchantId + fields.return_amount + fields.merchant_oid + cfg.merchantSalt)
+    .digest('base64');
+  truthy('yanlış alan sırası farklı imza üretir', paytr.refundHash(fields, cfg) !== wrongOrder);
+
+  // İade tutarı ONDALIKLI gider (token servisindeki kuruş biçiminden farklı)
+  check('iade tutarı ondalıklı biçimde', paytr.priceText(14990), '149.90');
+  truthy('token servisi ile aynı DEĞİL', paytr.amountFromKurus(14990) !== paytr.priceText(14990));
+}
+
+console.log('\ndurum sorgu imzası (merchant_id + merchant_oid + merchant_salt)');
+{
+  const fields = { merchant_oid: 'EFM2608181A2B3C' };
+  const expected = crypto
+    .createHmac('sha256', cfg.merchantKey)
+    .update(cfg.merchantId + fields.merchant_oid + cfg.merchantSalt)
+    .digest('base64');
+
+  check('durum sorgu imzası doğru üretiliyor', paytr.statusHash(fields, cfg), expected);
+
+  // Durum sorguda tutar YOKTUR; aynı sipariş için iade imzasıyla karışmamalı
+  const refundSig = paytr.refundHash({ merchant_oid: fields.merchant_oid, return_amount: '149.90' }, cfg);
+  truthy('aynı sipariş için iade imzasından farklı', paytr.statusHash(fields, cfg) !== refundSig);
+}
+
+console.log('\nmutabakat karşılaştırması');
+{
+  const reconcile = require('../api/admin/reconcile.js');
+  const paidOrder = { status: 'paid', totalKurus: 14990, refundedKurus: 0, environment: 'production' };
+
+  const match = reconcile.compare(paidOrder, {
+    status: 'success', paymentTotalKurus: 14990, returns: [], testMode: false
+  });
+  check('tutar tutuyorsa sorun yok', match.problems.length, 0);
+  truthy('mutabık', match.agrees);
+
+  const mismatch = reconcile.compare(paidOrder, {
+    status: 'success', paymentTotalKurus: 9990, returns: [], testMode: false
+  });
+  check('tutar farkı yakalanır', mismatch.problems[0].code, 'amount_mismatch');
+  check('mutabık değil', mismatch.agrees, false);
+
+  const ghostRefund = reconcile.compare(paidOrder, {
+    status: 'success', paymentTotalKurus: 14990,
+    returns: [{ return_amount: '50.00' }], testMode: false
+  });
+  check('panelden yapılan iade yakalanır', ghostRefund.problems[0].code, 'refund_mismatch');
+
+  const notPaidLocally = reconcile.compare(
+    { ...paidOrder, status: 'awaiting_payment' },
+    { status: 'success', paymentTotalKurus: 14990, returns: [], testMode: false }
+  );
+  check('bildirim kaçmışsa yakalanır', notPaidLocally.problems[0].code, 'remote_paid_local_not');
+
+  const testInProd = reconcile.compare(paidOrder, {
+    status: 'success', paymentTotalKurus: 14990, returns: [], testMode: true
+  });
+  truthy('canlı siparişte test işlemi yakalanır',
+    testInProd.problems.some(p => p.code === 'environment_mismatch'));
+}
+
+console.log('\nBDDK taksit tavanı (elektronik katalog)');
+{
+  const envLib = require('../api/_lib/env.js');
+  const savedMax = process.env.PAYTR_MAX_INSTALLMENT;
+  const savedNo  = process.env.PAYTR_NO_INSTALLMENT;
+
+  process.env.PAYTR_NO_INSTALLMENT  = '0';
+  process.env.PAYTR_MAX_INSTALLMENT = '12';
+  const capped = envLib.installmentSettings();
+  check('12 taksit tavana kırpılır', capped.maxInstallment, envLib.BDDK_ELECTRONICS_MAX_INSTALLMENT);
+  check('istenen değer raporlanır',  capped.requestedMaxInstallment, 12);
+
+  process.env.PAYTR_MAX_INSTALLMENT = '2';
+  check('tavan altı değer korunur', envLib.installmentSettings().maxInstallment, 2);
+
+  delete process.env.PAYTR_NO_INSTALLMENT;
+  delete process.env.PAYTR_MAX_INSTALLMENT;
+  const def = envLib.installmentSettings();
+  check('varsayılan: taksit kapalı', def.noInstallment, 1);
+  check('varsayılan: max 0',         def.maxInstallment, 0);
+
+  if (savedMax !== undefined) process.env.PAYTR_MAX_INSTALLMENT = savedMax;
+  if (savedNo  !== undefined) process.env.PAYTR_NO_INSTALLMENT  = savedNo;
+}
+
 console.log(`\n${passed} test geçti, ${failed} test başarısız.\n`);
 process.exit(failed ? 1 : 0);

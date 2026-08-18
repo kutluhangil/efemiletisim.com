@@ -18,6 +18,7 @@
 const { methodNotAllowed, json, fail, parseBody, rateLimit, clientIp, logPaymentEvent } = require('../_lib/http');
 const { requireAdmin } = require('../_lib/admin-auth');
 const { isValidOrderId, formatTry } = require('../_lib/orders');
+const { mailForStatus } = require('../_lib/order-mails');
 const store = require('../_lib/store');
 
 /* Yöneticinin elle atayabileceği sevkiyat durumları. Ödeme durumları
@@ -49,6 +50,7 @@ function adminOrderView(order) {
     invoice:       order.invoice || null,
     delivery:      order.delivery || 'kargo',
     eftReceiptNo:  order.eftReceiptNo || null,
+    trackingNumber: order.trackingNumber || null,
     items: (order.items || []).map(i => ({
       id: i.id, sku: i.sku || null, name: i.name,
       color: i.color || '', size: i.size || '',
@@ -58,6 +60,14 @@ function adminOrderView(order) {
     totalText:   formatTry(order.totalKurus),
     paidAt:      order.paidAt || null,
     fulfillment: order.fulfillment || null,
+    refundedKurus: Number(order.refundedKurus) || 0,
+    refunds: Array.isArray(order.refunds) ? order.refunds.map(r => ({
+      amountKurus: r.amountKurus, amountText: r.amountText, at: r.at, by: r.by
+    })) : [],
+    stock: order.stock ? {
+      decremented: (order.stock.decremented || []).length,
+      skipped:     (order.stock.skipped || []).length
+    } : null,
     payment: order.payment ? {
       paymentType:      order.payment.paymentType || null,
       installmentCount: order.payment.installmentCount || 0,
@@ -126,9 +136,27 @@ async function updateHandler(req, res, admin) {
       `Geçersiz durum. İzin verilenler: ${Object.keys(FULFILLMENT_STATUS).join(', ')}`);
   }
 
+  /* Takip numarası isteğe bağlı: gönderilmezse mevcut değer korunur.
+     "Kargoda" durumuna geçerken aynı istekte gönderilebilir ki müşteriye
+     giden kargo maili takip numarasını da içersin. */
+  let trackingNumber;
+  if (Object.prototype.hasOwnProperty.call(body, 'trackingNumber')) {
+    const raw = String(body.trackingNumber || '').trim();
+    if (raw.length > 64) {
+      return fail(res, 400, 'invalid_tracking', 'Kargo takip numarası en fazla 64 karakter olabilir.');
+    }
+    if (raw && !/^[A-Za-z0-9\-]+$/.test(raw)) {
+      return fail(res, 400, 'invalid_tracking',
+        'Kargo takip numarası yalnız harf, rakam ve tire içerebilir.');
+    }
+    trackingNumber = raw || null;
+  }
+
   let result;
   try {
-    result = await store.setOrderStatus(orderId, status, FULFILLMENT_STATUS[status], admin.email);
+    result = await store.setOrderStatus(
+      orderId, status, FULFILLMENT_STATUS[status], admin.email, { trackingNumber }
+    );
   } catch (err) {
     console.error('[admin] durum güncellenemedi (%s): %s', orderId, err.message);
     return fail(res, 503, 'update_failed', 'Sipariş durumu güncellenemedi.');
@@ -146,12 +174,31 @@ async function updateHandler(req, res, admin) {
     profileSync = await store.syncUserOrderStatus(order.userId, orderId, status, FULFILLMENT_STATUS[status]);
   }
 
+  /* Müşteriye durum bildirimi. Yalnız durum GERÇEKTEN değiştiyse gönderilir;
+     aynı durumu tekrar kaydetmek müşteriye ikinci bir mail göndermemeli.
+     Mail hatası yönetici işlemini geri almaz, ama "gönderildi" de denmez. */
+  let mailed = false;
+  if (result.statusChanged && order && order.buyer && order.buyer.email) {
+    const mail = mailForStatus(order, status);
+    if (mail) {
+      try {
+        await store.queueMail(order.buyer.email, mail.subject, mail.html);
+        mailed = true;
+      } catch (err) {
+        console.error('[admin] durum maili kuyruğa yazılamadı (%s): %s', orderId, err.message);
+      }
+    }
+  }
+
   logPaymentEvent({
     event: 'admin_order_status',
     orderId,
     status,
     applied: result.applied,
+    statusChanged: Boolean(result.statusChanged),
+    trackingChanged: Boolean(result.trackingChanged),
     profileSynced: profileSync.applied,
+    customerMailed: mailed,
     actor: admin.email
   });
 
@@ -161,6 +208,8 @@ async function updateHandler(req, res, admin) {
     status,
     statusLabel: FULFILLMENT_STATUS[status],
     applied: result.applied,
+    trackingNumber: result.order ? (result.order.trackingNumber || null) : null,
+    customerMailed: mailed,
     profileSynced: profileSync.applied,
     profileSyncReason: profileSync.reason || null
   });

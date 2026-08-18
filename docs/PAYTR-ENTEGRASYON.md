@@ -1,7 +1,7 @@
 # PayTR Entegrasyonu — Kurulum, Test ve İşletim Rehberi
 
 Bu dosya, ödeme altyapısının **nasıl çalıştığını** ve **canlıya nasıl alınacağını** anlatır.
-Ödeme sağlayıcısı 2026-08-17 itibarıyla iyzico'dan **PayTR**'ye taşınmıştır.
+Ödeme sağlayıcısı **PayTR**'dir (iFrame API).
 
 ---
 
@@ -185,34 +185,163 @@ paketine ekleyin.
 ### Günlük
 
 - Vercel → Logs → `[payment]` satırları. Aranacaklar: `notify_bad_hash`,
-  `amount_mismatch`, `settle_order_not_found`, `initialize_failed`.
+  `amount_mismatch`, `settle_order_not_found`, `initialize_failed`,
+  `insufficient_stock`, `stock_restore_failed`.
 - `pending_review` durumundaki siparişler: para çekilmiş olabilir, sevkiyat yapılmaz,
   24 saat içinde müşteriyle iletişime geçilir.
 
+### Sipariş yaşam döngüsü — hangi durumu kim yazar
+
+| Durum | Etiket | Yazan | Not |
+|---|---|---|---|
+| `awaiting_payment` | Ödeme bekleniyor | sunucu (initialize) | Ödeme formu açıldı, sonuç yok |
+| `awaiting_transfer` | EFT/havale bekleniyor | sunucu (EFT siparişi) | Havale beklenir |
+| `paid` | Hazırlanıyor | **yalnız PayTR bildirimi** | Stok düştü, sevkiyat başlayabilir |
+| `pending_review` | İnceleniyor | **yalnız PayTR bildirimi** | Para alındı, **sevkiyat YOK** |
+| `failed` | Ödeme alınamadı | **yalnız PayTR bildirimi** | Tahsilat yok |
+| `processing` | Hazırlanıyor | yönetici | |
+| `shipped` | Kargoda | yönetici | Müşteriye takip no maili gider |
+| `delivered` | Teslim Edildi | yönetici | Cayma hakkı hatırlatması gider |
+| `cancelled` | İptal | yönetici | İptal maili gider |
+| `refunded` | İade Edildi | iade ucu | Tam iade tamamlanınca otomatik |
+
+Yönetici **ödeme durumlarını** (`paid`, `pending_review`, `failed`) elle
+değiştiremez; onları yalnız imzası doğrulanmış PayTR bildirimi yazar.
+Sevkiyat durumlarına geçmiş bir sipariş, geç gelen bir bildirimle geri alınmaz.
+
+### Stok
+
+Stok **ödeme onaylanınca** düşer — sipariş açılırken değil. Tahsil edilmemiş bir
+sipariş stoğu kilitlememelidir.
+
+- Düşüm tek transaction'dır: **ya tüm satırlar düşer ya hiçbiri.** Yarım düşüm,
+  ödeme alınmış bir siparişte stoğu tutarsız bırakırdı.
+- Stok yetmezse sipariş `paid` **yapılmaz**, `pending_review`e düşer. Para
+  çekilmiştir; ekip müşteriyle iletişime geçip ya tedarik eder ya iade eder
+  (iade için bölüm "İade / iptal").
+- Bildirim tekrar gelse de stok ikinci kez düşmez (sonuçlanmış sipariş
+  yeniden işlenmez).
+- Stok düşüp sipariş durumu yazılamazsa (eşzamanlı ikinci bildirim yarışı
+  kazandıysa) düşülen stok otomatik geri verilir. Bu telafi başarısız olursa
+  log'a `stock_restore_failed` düşer — **elle kontrol edilmesi gereken tek
+  stok durumudur.**
+
+> ⚠️ **Sınır:** Stok yalnız **panelden yönetilen** (Firestore `products`)
+> ürünlerde takip edilir. Statik `api/_lib/catalog.json` içindeki ürünlerde
+> varyant stoğu yoktur ve dosya çalışma anında yazılamaz; bu satırlar
+> `skipped` olarak geçilir ve **stokları düşmez**. Stok takibinin tam çalışması
+> için katalogun tamamı panele taşınmalıdır.
+
+### Kargo ve müşteri bildirimleri
+
+Sıra önemlidir:
+
+1. Sipariş detayında **Kargo Takip No** alanına numarayı yaz, **Kaydet**.
+2. Sonra durumu **Kargoda** yap.
+
+Bu sırayla yapılırsa müşteriye giden kargo maili takip numarasını içerir.
+Ters sırada numara maile girmez (mail durum değişince gider, sonradan
+tekrar gönderilmez).
+
+Otomatik giden müşteri mailleri:
+
+| Ne zaman | Mail |
+|---|---|
+| Ödeme onaylanınca | Sipariş alındı (ürünler + toplam) |
+| Durum → Kargoda | Kargoya verildi + takip numarası |
+| Durum → Teslim Edildi | Teslim bilgisi + 14 gün cayma hakkı hatırlatması |
+| Durum → İptal | İptal bilgisi (tahsilat varsa iade notuyla) |
+| İade yapılınca | İade tutarı + yansıma süresi |
+
+Mail **yalnız durum gerçekten değiştiğinde** gider; aynı durumu tekrar
+kaydetmek ikinci mail üretmez. Panelde işlem sonrası bildirimde
+"müşteriye bilgi maili gönderildi" yazmıyorsa mail çıkmamıştır.
+
+> Mailler Firestore `mail` koleksiyonuna yazılır; gerçek gönderimi
+> "Trigger Email from Firestore" extension'ı yapar. Extension kurulu değilse
+> **dokümanlar birikir ama mail çıkmaz** — sessiz bir başarısızlıktır.
+> Kurulum: `docs/EMAIL-KURULUMU.md`.
+
 ### İade / iptal
 
-PayTR panelinden yapılır. İşlem sonrası `orders/{id}` kaydını Firebase Console'dan
-`refunded` / `cancelled` yapın; bu iki durum "terminal" kabul edilir ve sonradan gelen
-bildirimle geri alınmaz.
+**Yönetim panelinden yapılır** — `POST /api/admin/refund`, PayTR İade servisini
+(`https://www.paytr.com/odeme/iade`) çağırır ve sonucu sipariş kaydına yazar.
+
+```
+POST /api/admin/refund
+{ "orderId": "EFM2608181A2B3C", "amountKurus": 14990 }
+```
+
+`amountKurus` gönderilmezse **kalan tutarın tamamı** iade edilir. Kısmi iade
+desteklenir; birden fazla kısmi iade yapılabilir.
+
+Sunucu tarafındaki korumalar:
+
+- Yalnız `status == "paid"` ve kartla ödenmiş siparişler iade edilebilir.
+  EFT/havale iadesi banka üzerinden yapılır, bu uçtan geçmez.
+- İade tutarı **kalan tutarı aşamaz** (önceki iadeler düşülür); aşan istek
+  PayTR'ye hiç gitmeden reddedilir.
+- Toplam iade sipariş tutarına ulaşınca sipariş `refunded` olur.
+- Her iade `refunds[]` dizisine kim/ne zaman/ne kadar olarak yazılır ve
+  `refund_ok` olarak loglanır.
+- PayTR'ye ulaşılamazsa sipariş kaydı **değişmez**, işlem tekrar denenebilir.
+
+> ⚠️ Tek riskli durum: iade PayTR tarafında başarılı olup sipariş kaydına
+> yazılamazsa uç `refund_done_record_failed` döner ve **tekrar denemeyin**
+> uyarısı verir — kaydı elle düzeltin, yoksa çift iade yaparsınız.
+
+PayTR panelinden elle yapılan iadeler bizim kaydımıza yansımaz; mutabakat
+adımı (bölüm 7) bu farkı `refund_mismatch` olarak yakalar.
 
 ### Taksit açmak
 
-`PAYTR_NO_INSTALLMENT=0` ve `PAYTR_MAX_INSTALLMENT=6` gibi. Açmadan önce:
-PayTR hesabınızda tanımlı mı, ve BDDK'nın **güncel** taksit sınırları elektronik/
-telekomünikasyon ürünleri için ne diyor — ikisini de teyit edin.
+`PAYTR_NO_INSTALLMENT=0` ve `PAYTR_MAX_INSTALLMENT=3` gibi.
+
+**Kod tarafında BDDK tavanı var:** bu katalog tamamen elektronik/telekomünikasyon
+ürünü olduğu için `api/_lib/env.js` içindeki `BDDK_ELECTRONICS_MAX_INSTALLMENT`
+sabiti taksit sayısını kırpar (şu an **3**). Daha yükseği istenirse tavan uygulanır
+ve durum loglanır.
+
+> ⚠️ Bu tavan bir uyum garantisi değil, kaza önleyicidir. BDDK sınırları dönem dönem
+> değişir. Taksit açmadan önce **güncel BDDK sınırını** ve PayTR panelinizdeki taksit
+> tanımını ayrıca teyit edin; sabit gerekiyorsa `env.js` içinde güncelleyin.
 
 ---
 
 ## 7. Mutabakat (haftalık, 15 dakika)
 
+### Tek sipariş: otomatik karşılaştırma
+
+```
+GET /api/admin/reconcile?orderId=EFM2608181A2B3C
+```
+
+PayTR Durum Sorgu servisini (`https://www.paytr.com/odeme/durum-sorgu`) çağırıp
+bizim kaydımızla karşılaştırır. **Hiçbir şeyi düzeltmez, yalnız rapor eder** —
+tutar uyuşmazlığı çoğu zaman insan kararı gerektirir, sessizce "düzeltmek" gerçek
+sorunu gizler.
+
+Yakaladığı farklar:
+
+| Kod | Anlamı |
+|---|---|
+| `amount_mismatch` | Tahsil edilen tutar sipariş tutarıyla uyuşmuyor |
+| `remote_paid_local_not` | PayTR'de ödeme var, bizde yok → **bildirim URL'si çalışmıyor** |
+| `local_paid_remote_not` | Bizde ödendi, PayTR'de karşılığı yok → ciddi bulgu |
+| `refund_mismatch` | İade toplamı tutmuyor → panelden elle iade yapılmış olabilir |
+| `environment_mismatch` | Canlı siparişte test modu işlemi |
+| `not_found_at_provider` | PayTR'de bu sipariş numarasına ait başarılı işlem yok |
+
+Yanıt ayrıca PayTR'nin döndüğü net tutarı ve kesintiyi verir (`netKurus`,
+`feeKurus`) — komisyon kontrolü için.
+
+### Toplu kontrol (elle)
+
 1. PayTR paneli → İşlemler → ilgili tarih aralığı → başarılı işlemleri dışa aktarın.
 2. Firestore `orders` koleksiyonundan aynı aralıktaki `status == "paid"` siparişleri alın.
-3. Üç farkı arayın:
-   - **PayTR'de başarılı, bizde `awaiting_payment`** → bildirim ulaşmamış; Bildirim URL'yi
-     ve logları kontrol edin, siparişi elle tamamlayın.
-   - **bizde `paid`, PayTR'de yok** → ciddi bulgu, hemen inceleyin.
-   - **`pending_review`** → tutar / para birimi / ortam uyuşmazlığı; kapatılmadan sevkiyat yapılmaz.
-4. İade ve iptalleri ayrıca eşleştirin.
+3. Sayılar tutmuyorsa farklı olan sipariş numaralarını yukarıdaki uçtan tek tek sorgulayın.
+4. `pending_review` durumundaki siparişleri ayrıca gözden geçirin — kapatılmadan
+   sevkiyat yapılmaz.
 
 ---
 

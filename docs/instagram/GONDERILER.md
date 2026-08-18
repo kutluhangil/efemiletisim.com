@@ -93,7 +93,7 @@ Mağazamızda deneyebilir, sitemizden ücretsiz kargoyla sipariş verebilirsiniz
 1. Ürün orijinal mi? Sattığımız her ürün orijinal, faturalı ve Türkiye garantilidir.
 2. Kargo ne kadar? Tüm siparişlerde ücretsiz. Yurtiçi Kargo ile 1-3 iş günü içinde teslim.
 3. Beğenmezsem? Teslimattan itibaren 14 gün içinde koşulsuz iade hakkınız var.
-4. Ödeme güvenli mi? Ödemeler iyzico altyapısı üzerinden alınıyor; kart bilgileriniz bize ulaşmıyor.
+4. Ödeme güvenli mi? Ödemeler PayTR altyapısı üzerinden alınıyor; kart bilgileriniz bize ulaşmıyor.
 5. Gerçek mağaza var mı? M1 AVM Seyhan'da, 2015'ten beri.
 
 efemiletisim.com

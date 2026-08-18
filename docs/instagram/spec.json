@@ -91,7 +91,7 @@
 
     { "file": "gonderi-05/05-5.png", "tpl": "qa", "num": "04",
       "q": "Ödeme güvenli mi?",
-      "a": "Ödemeler iyzico altyapısı üzerinden alınıyor. Kart bilgileriniz bize ulaşmıyor." },
+      "a": "Ödemeler PayTR altyapısı üzerinden alınıyor. Kart bilgileriniz bize ulaşmıyor." },
 
     { "file": "gonderi-05/05-6.png", "tpl": "qa", "num": "05",
       "q": "Gerçek mağaza var mı?",

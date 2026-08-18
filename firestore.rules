@@ -14,7 +14,7 @@ service cloud.firestore {
     //                && !request.resource.data.diff(resource.data)
     //                        .affectedKeys().hasAny(['orders']);
     //
-    // Bkz. docs/IYZICO-DENETIM-RAPORU.md → bulgu F-06.
+    // Bkz. docs/ARKADAS-YAPILACAKLAR.md → açık bulgu A-01.
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
@@ -97,26 +97,6 @@ service cloud.firestore {
                     && request.resource.data.answer == null
                     && request.resource.data.productId is int;
       allow update, delete: if false;
-    }
-
-    // Siparişler: SADECE Vercel Function'ların Firebase Admin SDK ile yazdığı
-    // top-level koleksiyon (bkz. api/_lib/orders.js) — client burada asla
-    // create yapamaz, bu yüzden client kendi kendine sahte "başarılı sipariş"
-    // yazamaz (ödeme simülasyonu döneminde localStorage'da mümkündü).
-    // Sahibi kendi siparişini, admin (custom claim) tüm siparişleri okuyabilir.
-    // Durum/kargo takip güncellemesi admin panelinden client SDK ile yapılır.
-    match /orders/{orderId} {
-      allow read: if request.auth != null
-                  && (request.auth.token.admin == true || resource.data.userId == request.auth.uid);
-      allow create: if false;
-      allow update: if request.auth != null && request.auth.token.admin == true;
-      allow delete: if false;
-    }
-
-    // 3DS ödeme taslakları: tamamen sunucu içi (Admin SDK) — client'ın
-    // buraya hiçbir erişimi yok, iyzico callback/webhook akışının ara durumu.
-    match /paymentAttempts/{attemptId} {
-      allow read, write: if false;
     }
   }
 }

@@ -18,6 +18,21 @@
         merchant_oid + merchant_salt + status + total_amount, merchant_key ) )
       Doğrulandıktan sonra gövdesi TAM OLARAK "OK" olan yanıt dönülmelidir.
 
+   Ek servisler (ödeme sonrası işletim):
+
+   3) İade  → POST https://www.paytr.com/odeme/iade
+      paytr_token = base64( HMAC-SHA256(
+        merchant_id + merchant_oid + return_amount + merchant_salt, merchant_key ) )
+      Kısmi iade desteklenir; toplam iade ödeme tutarını AŞAMAZ.
+
+   4) Durum sorgu → POST https://www.paytr.com/odeme/durum-sorgu
+      paytr_token = base64( HMAC-SHA256(
+        merchant_id + merchant_oid + merchant_salt, merchant_key ) )
+      Mutabakat için kullanılır: tahsil edilen tutar, iade kayıtları, taksit.
+
+   DİKKAT: her servisin hash alan sırası FARKLIDIR; birinden diğerine
+   kopyalanamaz.
+
    ÖNEMLİ kurallar (PayTR dokümanı):
    - payment_amount ve total_amount kuruş cinsindendir (34,56 TL → 3456).
    - merchant_oid EN FAZLA 64 karakter ve ALFANUMERİK olmalıdır (tire/boşluk yok).
@@ -31,6 +46,9 @@ const crypto = require('crypto');
 
 const DEFAULT_TIMEOUT_MS = 20000;
 
+const PAYTR_REFUND_URL = 'https://www.paytr.com/odeme/iade';
+const PAYTR_STATUS_URL = 'https://www.paytr.com/odeme/durum-sorgu';
+
 /* ─── Yardımcılar ─── */
 
 /* Kuruş → PayTR'nin beklediği tamsayı string (34,56 TL → "3456") */
@@ -41,6 +59,15 @@ function amountFromKurus(kurus) {
 /* Kuruş → sepet satırındaki birim fiyat string'i ("18.00") */
 function priceText(kurus) {
   return (Number(kurus) / 100).toFixed(2);
+}
+
+/* PayTR'nin ondalıklı tutar string'i ("10.8") → kuruş (1080).
+   Durum sorgu servisi tutarları bu biçimde döner. Kayan nokta hatası
+   (10.8 * 100 = 1080.0000000000001) için yuvarlanır. */
+function kurusFromDecimal(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const n = Number(String(value).replace(',', '.'));
+  return Number.isFinite(n) ? Math.round(n * 100) : null;
 }
 
 /* PayTR sepet formatı: [[ürün adı, birim fiyat, adet], ...] → JSON → base64 */
@@ -166,9 +193,125 @@ function verifyNotification(payload, cfg) {
   return safeEquals(expected, String(payload.hash || ''));
 }
 
+/* ─── Ortak POST yardımcısı (iade + durum sorgu) ───
+   PayTR bu iki serviste de form-encoded istek alır, JSON döner. */
+async function postForm(url, fields, { timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const res = await fetch(url, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body:    new URLSearchParams(fields).toString(),
+      signal:  controller.signal
+    });
+
+    const rawText = await res.text();
+    let body = null;
+    try { body = JSON.parse(rawText); } catch { /* JSON değilse body null kalır */ }
+
+    return { httpOk: res.ok, httpStatus: res.status, body, rawText };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/* ─── 3. servis: iade imzası ───
+   Alan sırası: merchant_id + merchant_oid + return_amount + merchant_salt */
+function refundHash(fields, cfg) {
+  return crypto
+    .createHmac('sha256', cfg.merchantKey)
+    .update(cfg.merchantId + fields.merchant_oid + fields.return_amount + cfg.merchantSalt)
+    .digest('base64');
+}
+
+/* İade isteği gönderir.
+   returnKurus KURUŞ cinsindendir; PayTR bu serviste ondalıklı tutar
+   beklediği için "10.25" biçimine çevrilir (token alma servisinden FARKLI).
+   Dönüş: { ok, status, refunded, errNo, errMsg, isTest, httpStatus, body } */
+async function refundPayment(input, cfg, opts = {}) {
+  const fields = {
+    merchant_id:   cfg.merchantId,
+    merchant_oid:  input.merchantOid,
+    return_amount: priceText(input.returnKurus)
+  };
+  fields.paytr_token = refundHash(fields, cfg);
+  if (input.referenceNo) fields.reference_no = asciiSafe(input.referenceNo, 64);
+
+  const { httpOk, httpStatus, body } = await postForm(PAYTR_REFUND_URL, fields, opts);
+  const status = body ? body.status : null;
+
+  return {
+    ok:        httpOk && status === 'success',
+    status,
+    refunded:  status === 'success' ? fields.return_amount : null,
+    errNo:     body ? (body.err_no || null) : null,
+    errMsg:    body ? (body.err_msg || null) : null,
+    isTest:    body ? String(body.is_test || '0') === '1' : null,
+    httpStatus,
+    body
+  };
+}
+
+/* ─── 4. servis: durum sorgu imzası ───
+   Alan sırası: merchant_id + merchant_oid + merchant_salt (tutar YOK) */
+function statusHash(fields, cfg) {
+  return crypto
+    .createHmac('sha256', cfg.merchantKey)
+    .update(cfg.merchantId + fields.merchant_oid + cfg.merchantSalt)
+    .digest('base64');
+}
+
+/* Sipariş numarasına göre PayTR'deki işlem durumunu sorgular (mutabakat).
+   Dönüş: { ok, status, paymentTotalKurus, returns, ... } */
+async function queryTransactionStatus(input, cfg, opts = {}) {
+  const fields = {
+    merchant_id:  cfg.merchantId,
+    merchant_oid: input.merchantOid
+  };
+  fields.paytr_token = statusHash(fields, cfg);
+
+  const { httpOk, httpStatus, body } = await postForm(PAYTR_STATUS_URL, fields, opts);
+  const status = body ? body.status : null;
+
+  if (!httpOk || status !== 'success') {
+    return {
+      ok: false,
+      status,
+      errNo:  body ? (body.err_no || null) : null,
+      errMsg: body ? (body.err_msg || null) : null,
+      httpStatus,
+      body
+    };
+  }
+
+  return {
+    ok: true,
+    status,
+    paymentAmountKurus: kurusFromDecimal(body.payment_amount),
+    paymentTotalKurus:  kurusFromDecimal(body.payment_total),
+    paymentDate:        body.payment_date || null,
+    currency:           body.currency || null,
+    installment:        parseInt(body.taksit, 10) || 0,
+    cardBrand:          body.kart_marka || null,
+    maskedPan:          body.masked_pan || null,
+    paymentType:        body.odeme_tipi || null,
+    testMode:           String(body.test_mode || '0') === '1',
+    netKurus:           kurusFromDecimal(body.net_tutar),
+    feeKurus:           kurusFromDecimal(body.kesinti_tutari),
+    returns:            Array.isArray(body.returns) ? body.returns : [],
+    httpStatus,
+    body
+  };
+}
+
 module.exports = {
+  PAYTR_REFUND_URL,
+  PAYTR_STATUS_URL,
   amountFromKurus,
   priceText,
+  kurusFromDecimal,
   buildBasket,
   asciiSafe,
   isValidMerchantOid,
@@ -176,5 +319,9 @@ module.exports = {
   tokenHash,
   createPaymentToken,
   notificationHash,
-  verifyNotification
+  verifyNotification,
+  refundHash,
+  refundPayment,
+  statusHash,
+  queryTransactionStatus
 };

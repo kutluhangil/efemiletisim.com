@@ -601,9 +601,25 @@ function renderOrders() {
             </div>
             <div class="order-shipping-note"><svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="2" y="8" width="12" height="8" rx="1"/><path d="M14 11h4l3 3v2h-2"/><circle cx="6" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg> Ücretsiz Kargo</div>
           </div>
+          ${orderPaymentNote(o)}
+          ${o.trackingNumber ? `
+            <div style="margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--border);font-size:0.875rem">
+              <span style="color:var(--text-muted)">Kargo takip no:</span>
+              <strong style="user-select:all">${o.trackingNumber}</strong>
+            </div>` : ''}
         </div>
       </div>`;
   }).join('');
+}
+
+/* Ödeme yöntemi + taksit satırı. Taksit bilgisi ödeme sağlayıcısının
+   bildiriminden gelir; 0/1 tek çekim demektir ve ayrıca yazılmaz. */
+function orderPaymentNote(o) {
+  const n = Number(o.installmentCount) || 0;
+  if (o.paymentMethod === 'eft') {
+    return `<div style="margin-top:var(--space-2);font-size:0.8125rem;color:var(--text-muted)">Ödeme: EFT / Havale</div>`;
+  }
+  return `<div style="margin-top:var(--space-2);font-size:0.8125rem;color:var(--text-muted)">Ödeme: Kredi / Banka Kartı${n > 1 ? ` — <strong>${n} taksit</strong>` : ' — tek çekim'}</div>`;
 }
 
 function renderFavorites() {

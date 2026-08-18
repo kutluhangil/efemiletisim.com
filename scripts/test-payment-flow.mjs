@@ -87,6 +87,8 @@ const db = new Map();
 const events = new Set();
 const sideEffects = { mails: [], profileWrites: [] };
 
+const stock = new Map();   // `${id}::${sku}` → adet (testler doldurur)
+
 const fakeStore = {
   getStore: () => ({}),
   isStoreConfigured: () => true,
@@ -107,7 +109,31 @@ const fakeStore = {
   },
   recordEventOnce: async (id) => (events.has(id) ? false : (events.add(id), true)),
   appendOrderToUserProfile: async (uid, order) => { sideEffects.profileWrites.push(order.id); },
-  queueMail: async (to, subject) => { sideEffects.mails.push({ to, subject }); }
+  queueMail: async (to, subject) => { sideEffects.mails.push({ to, subject }); },
+
+  /* Stok: `${id}::${sku}` → adet. null = o satır Firestore'da yok (statik
+     katalog ürünü) ve stok takibi yapılamaz — gerçek store'daki `skipped`
+     davranışını taklit eder. */
+  decrementStock: async (lines) => {
+    const decremented = [], skipped = [], insufficient = [];
+    for (const l of lines) {
+      const key = `${l.id}::${l.sku}`;
+      if (!stock.has(key)) { skipped.push({ ...l, reason: 'not_in_firestore' }); continue; }
+      const have = stock.get(key);
+      if (have < l.qty) { insufficient.push({ ...l, available: have }); continue; }
+      decremented.push({ ...l, remaining: have - l.qty });
+    }
+    if (insufficient.length) return { ok: false, applied: false, decremented: [], skipped, insufficient };
+    for (const d of decremented) stock.set(`${d.id}::${d.sku}`, stock.get(`${d.id}::${d.sku}`) - d.qty);
+    return { ok: true, applied: decremented.length > 0, decremented, skipped, insufficient: [] };
+  },
+  restoreStock: async (lines) => {
+    for (const l of lines) {
+      const key = `${l.id}::${l.sku}`;
+      if (stock.has(key)) stock.set(key, stock.get(key) + l.qty);
+    }
+    return { applied: true, restored: lines.length };
+  }
 };
 
 require.cache[require.resolve('../api/_lib/store.js')] = {
@@ -290,6 +316,46 @@ const badBuyer = await call(initialize, { body: { ...ORDER_INPUT, buyer: { ad: '
 check('geçersiz alıcı 400', badBuyer.res.statusCode, 400);
 const wrongMethod = await call(notify, { method: 'GET', body: {} });
 check('bildirim GET kabul etmiyor', wrongMethod.res.statusCode, 405);
+
+console.log('\n8b) stok düşümü — ödeme onaylanınca');
+{
+  // Bu satırlar Firestore'da stoklu ürün gibi davransın
+  stock.set(`${P1.id}::${SKU1}`, 5);
+  stock.set(`${P1.id}::${SKU1B}`, 5);
+
+  const initS = await call(initialize, { body: ORDER_INPUT });
+  await call(notify, { body: notification(initS.json.orderId) });
+  const orderS = db.get(initS.json.orderId);
+
+  check('sipariş paid', orderS.status, 'paid');
+  check('SKU1 stoğu 2 düştü', stock.get(`${P1.id}::${SKU1}`), 3);
+  check('SKU1B stoğu 1 düştü', stock.get(`${P1.id}::${SKU1B}`), 4);
+  check('stok kaydı siparişe yazıldı', orderS.stock.decremented.length, 2);
+
+  // Bildirim tekrarı stoğu İKİNCİ KEZ düşürmemeli
+  await call(notify, { body: notification(initS.json.orderId) });
+  check('tekrar bildiriminde stok düşmedi', stock.get(`${P1.id}::${SKU1}`), 3);
+}
+
+console.log('\n8c) stok yetersiz → pending_review, sevkiyat yok');
+{
+  stock.set(`${P1.id}::${SKU1}`, 1);    // 2 adet isteniyor, 1 var
+  stock.set(`${P1.id}::${SKU1B}`, 9);
+
+  const mailsBefore = sideEffects.mails.length;
+  const initX = await call(initialize, { body: ORDER_INPUT });
+  await call(notify, { body: notification(initX.json.orderId) });
+  const orderX = db.get(initX.json.orderId);
+
+  check('sipariş paid DEĞİL', orderX.status, 'pending_review');
+  check('sorun kaydedildi', orderX.payment.problems, ['insufficient_stock']);
+  check('yeten satır da düşürülmedi (hep ya hiç)', stock.get(`${P1.id}::${SKU1B}`), 9);
+  check('yetersiz satır düşürülmedi', stock.get(`${P1.id}::${SKU1}`), 1);
+  check('sipariş onay maili gitmedi', sideEffects.mails.length, mailsBefore);
+  check('müşteriye açıklama yazıldı', typeof orderX.customerMessage, 'string');
+
+  stock.clear();   // sonraki testleri etkilemesin
+}
 
 console.log('\n9) hız sınırı (kart deneme freni)');
 {

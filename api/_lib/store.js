@@ -138,7 +138,7 @@ async function listOrders({ limit = 200, status = null } = {}) {
 /* ─── Yönetici: sipariş durumunu değiştir ───
    Ödeme durumunun üzerine yazmamak için yalnız sevkiyat durumlarına geçilir;
    çağıran (api/admin/orders.js) izin verilen durumu doğrular. */
-async function setOrderStatus(orderId, status, statusLabel, actorEmail) {
+async function setOrderStatus(orderId, status, statusLabel, actorEmail, { trackingNumber } = {}) {
   const store = getStore();
   if (!store) throw new Error('store_not_configured');
   const ref = store.db.collection('orders').doc(orderId);
@@ -148,9 +148,16 @@ async function setOrderStatus(orderId, status, statusLabel, actorEmail) {
     if (!snap.exists) return { applied: false, reason: 'not_found', order: null };
 
     const order = snap.data();
-    if (order.status === status) return { applied: false, reason: 'no_change', order };
 
-    tx.update(ref, {
+    /* Takip numarası da değişebildiği için "durum aynı" tek başına
+       değişiklik yok demek değildir. */
+    const statusChanged   = order.status !== status;
+    const trackingChanged = trackingNumber !== undefined
+      && (order.trackingNumber || null) !== (trackingNumber || null);
+
+    if (!statusChanged && !trackingChanged) return { applied: false, reason: 'no_change', order };
+
+    const patch = {
       status,
       statusLabel,
       fulfillment: {
@@ -159,9 +166,45 @@ async function setOrderStatus(orderId, status, statusLabel, actorEmail) {
         previousStatus: order.status
       },
       updatedAt: store.FieldValue.serverTimestamp()
+    };
+    if (trackingNumber !== undefined) patch.trackingNumber = trackingNumber || null;
+
+    tx.update(ref, patch);
+
+    return {
+      applied: true,
+      statusChanged,
+      trackingChanged,
+      order: { ...order, ...patch, updatedAt: undefined }
+    };
+  });
+}
+
+/* ─── Yalnız kargo takip numarasını güncelle (durum değişmeden) ─── */
+async function setTrackingNumber(orderId, trackingNumber, actorEmail) {
+  const store = getStore();
+  if (!store) throw new Error('store_not_configured');
+  const ref = store.db.collection('orders').doc(orderId);
+
+  return store.db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) return { applied: false, reason: 'not_found', order: null };
+
+    const order = snap.data();
+    const next = trackingNumber || null;
+    if ((order.trackingNumber || null) === next) return { applied: false, reason: 'no_change', order };
+
+    tx.update(ref, {
+      trackingNumber: next,
+      fulfillment: {
+        ...(order.fulfillment || {}),
+        updatedAt: new Date().toISOString(),
+        updatedBy: actorEmail || null
+      },
+      updatedAt: store.FieldValue.serverTimestamp()
     });
 
-    return { applied: true, order: { ...order, status, statusLabel } };
+    return { applied: true, order: { ...order, trackingNumber: next } };
   });
 }
 
@@ -223,6 +266,194 @@ async function deleteProduct(id) {
   const store = getStore();
   if (!store) throw new Error('store_not_configured');
   await store.db.collection('products').doc(String(id)).delete();
+}
+
+/* ─── Stok düşümü (ödeme onaylanınca) ───
+   lines: [{ id, sku, qty }] — sipariş satırları (sunucuda fiyatlanmış hâli).
+
+   Tek transaction içinde çalışır: ya tüm satırlar düşer ya hiçbiri. Yarım
+   düşüm, ödeme alınmış bir siparişte stoğu tutarsız bırakırdı.
+
+   ÖNEMLİ sınır: stok yalnız Firestore `products` koleksiyonunda tutulur
+   (panelden yönetilen ürünler). Statik `catalog.json`'daki ürünlerde stok
+   alanı YOKTUR; bu satırlar `skipped` olarak döner — sessizce "düştü"
+   sayılmaz, çağıran bunu görüp karar verir.
+
+   Dönüş: { ok, applied, decremented[], skipped[], insufficient[] }          */
+async function decrementStock(lines) {
+  const store = getStore();
+  if (!store) throw new Error('store_not_configured');
+
+  const ids = [...new Set(lines.map(l => String(l.id)))];
+
+  return store.db.runTransaction(async (tx) => {
+    const refs  = ids.map(id => store.db.collection('products').doc(id));
+    const snaps = refs.length ? await tx.getAll(...refs) : [];
+    const byId  = new Map();
+    snaps.forEach((snap, i) => { if (snap.exists) byId.set(ids[i], snap.data()); });
+
+    const decremented   = [];
+    const skipped       = [];
+    const insufficient  = [];
+    const patches       = new Map();   // id → yeni variants dizisi
+
+    for (const line of lines) {
+      const id = String(line.id);
+      const product = byId.get(id);
+
+      /* Firestore'da yoksa (yalnız statik katalogda) stok takibi yapılamaz. */
+      if (!product) {
+        skipped.push({ id, sku: line.sku, qty: line.qty, reason: 'not_in_firestore' });
+        continue;
+      }
+
+      const variants = patches.get(id) || (Array.isArray(product.variants) ? product.variants.map(v => ({ ...v })) : []);
+      const idx = variants.findIndex(v => String(v.sku) === String(line.sku));
+
+      if (idx < 0) {
+        skipped.push({ id, sku: line.sku, qty: line.qty, reason: 'variant_not_found' });
+        continue;
+      }
+
+      const current = Number(variants[idx].stock);
+      if (!Number.isFinite(current)) {
+        skipped.push({ id, sku: line.sku, qty: line.qty, reason: 'stock_not_tracked' });
+        continue;
+      }
+
+      if (current < line.qty) {
+        insufficient.push({ id, sku: line.sku, qty: line.qty, available: current });
+        continue;
+      }
+
+      variants[idx].stock = current - line.qty;
+      patches.set(id, variants);
+      decremented.push({ id, sku: line.sku, qty: line.qty, remaining: variants[idx].stock });
+    }
+
+    /* Bir satır bile yetmiyorsa HİÇBİR ŞEY yazılmaz. */
+    if (insufficient.length) {
+      return { ok: false, applied: false, decremented: [], skipped, insufficient };
+    }
+
+    for (const [id, variants] of patches) {
+      const total = variants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0);
+      tx.update(store.db.collection('products').doc(id), {
+        variants,
+        stock:     total,
+        updatedAt: store.FieldValue.serverTimestamp()
+      });
+    }
+
+    return { ok: true, applied: patches.size > 0, decremented, skipped, insufficient: [] };
+  });
+}
+
+/* ─── Stoğu geri ver (telafi) ───
+   `decrementStock` başarılı olup sipariş durumu YAZILAMAZSA (eşzamanlı ikinci
+   bildirim yarışı kazandıysa) düşülen stok geri verilir. Aksi hâlde aynı
+   sipariş için stok iki kez düşerdi.
+
+   lines: decrementStock'un döndüğü `decremented` dizisi.                    */
+async function restoreStock(lines) {
+  const store = getStore();
+  if (!store || !lines || !lines.length) return { applied: false };
+
+  const ids = [...new Set(lines.map(l => String(l.id)))];
+
+  return store.db.runTransaction(async (tx) => {
+    const refs  = ids.map(id => store.db.collection('products').doc(id));
+    const snaps = await tx.getAll(...refs);
+    const byId  = new Map();
+    snaps.forEach((snap, i) => { if (snap.exists) byId.set(ids[i], snap.data()); });
+
+    const patches = new Map();
+
+    for (const line of lines) {
+      const id = String(line.id);
+      const product = byId.get(id);
+      if (!product) continue;
+
+      const variants = patches.get(id) || (Array.isArray(product.variants) ? product.variants.map(v => ({ ...v })) : []);
+      const idx = variants.findIndex(v => String(v.sku) === String(line.sku));
+      if (idx < 0) continue;
+
+      const current = Number(variants[idx].stock);
+      if (!Number.isFinite(current)) continue;
+
+      variants[idx].stock = current + line.qty;
+      patches.set(id, variants);
+    }
+
+    for (const [id, variants] of patches) {
+      const total = variants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0);
+      tx.update(store.db.collection('products').doc(id), {
+        variants,
+        stock:     total,
+        updatedAt: store.FieldValue.serverTimestamp()
+      });
+    }
+
+    return { applied: patches.size > 0, restored: lines.length };
+  });
+}
+
+/* ─── Müşteri talepleri: ürün soruları ───
+   Yanıt yalnız Admin SDK ile yazılır; `firestore.rules` istemciye
+   `productQuestions` güncellemeyi kapatır (müşteri kendi sorusunu
+   "yanıtlanmış" gösteremez). */
+async function listProductQuestions({ limit = 300 } = {}) {
+  const store = getStore();
+  if (!store) return [];
+  const snap = await store.db.collection('productQuestions')
+    .orderBy('createdAt', 'desc').limit(Math.min(limit, 500)).get();
+  return snap.docs.map(d => ({
+    id:        d.id,
+    productId: d.data().productId,
+    question:  d.data().question,
+    answer:    d.data().answer || null,
+    answeredBy: d.data().answeredBy || null,
+    answeredAt: d.data().answeredAt || null,
+    createdAt: d.data().createdAt ? d.data().createdAt.toDate().toISOString() : null
+  }));
+}
+
+async function answerProductQuestion(id, answer, actorEmail) {
+  const store = getStore();
+  if (!store) throw new Error('store_not_configured');
+  const ref = store.db.collection('productQuestions').doc(id);
+
+  const snap = await ref.get();
+  if (!snap.exists) return { applied: false, reason: 'not_found' };
+
+  await ref.update({
+    answer,
+    answeredBy: answer ? (actorEmail || null) : null,
+    answeredAt: answer ? new Date().toISOString() : null,
+    updatedAt:  store.FieldValue.serverTimestamp()
+  });
+  return { applied: true };
+}
+
+/* ─── Müşteri talepleri: stok bildirimi ("gelince haber ver") ───
+   Müşteri e-postası içerir; istemci bu koleksiyonu OKUYAMAZ. */
+async function listStockAlerts({ limit = 300 } = {}) {
+  const store = getStore();
+  if (!store) return [];
+  const snap = await store.db.collection('stockAlerts')
+    .orderBy('createdAt', 'desc').limit(Math.min(limit, 500)).get();
+  return snap.docs.map(d => ({
+    id:        d.id,
+    productId: d.data().productId,
+    email:     d.data().email,
+    createdAt: d.data().createdAt ? d.data().createdAt.toDate().toISOString() : null
+  }));
+}
+
+async function deleteInboxItem(collection, id) {
+  const store = getStore();
+  if (!store) throw new Error('store_not_configured');
+  await store.db.collection(collection).doc(id).delete();
 }
 
 /* ─── Katalog: kuponlar ─── */
@@ -322,10 +553,17 @@ module.exports = {
   transitionOrder,
   listOrders,
   setOrderStatus,
+  setTrackingNumber,
   syncUserOrderStatus,
   listProducts,
   saveProduct,
   deleteProduct,
+  listProductQuestions,
+  answerProductQuestion,
+  listStockAlerts,
+  deleteInboxItem,
+  decrementStock,
+  restoreStock,
   listCoupons,
   saveCoupon,
   deleteCoupon,
