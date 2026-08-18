@@ -116,7 +116,7 @@ const BASE_PRODUCTS = [
     badge: "bestseller",
     badgeLabel: "Çok Satan",
     stock: 10,
-    images: ["assets/images/products/apple-watch-11-42-1.png", "assets/images/products/apple-watch-11-42-2.jpg", "assets/images/products/apple-watch-11-42-3.jpg"],
+    images: ["assets/images/products/apple-watch-11-42-1.png", "assets/images/products/apple-watch-11-42-2.jpg", "assets/images/products/apple-watch-11-42-3.png"],
     /* Renk seçilince galeride o rengin görseli gösterilir (Apple resmi görselleri). */
     colorImages: {
       "Jet Siyah": "assets/images/products/apple-watch-11-42-renk-jet-siyah.png",
@@ -196,7 +196,7 @@ const BASE_PRODUCTS = [
     badge: "bestseller",
     badgeLabel: "Çok Satan",
     stock: 10,
-    images: ["assets/images/products/apple-watch-se3-40-1.jpg", "assets/images/products/apple-watch-se3-40-2.png", "assets/images/products/apple-watch-se3-40-3.jpg"],
+    images: ["assets/images/products/apple-watch-se3-40-1.jpg", "assets/images/products/apple-watch-se3-40-2.png", "assets/images/products/apple-watch-se3-40-3.png"],
     /* Renk seçilince galeride o rengin görseli gösterilir (Apple resmi görselleri). */
     colorImages: {
       "Gece Yarısı": "assets/images/products/apple-watch-se3-40-renk-gece-yarisi.png",
@@ -271,7 +271,7 @@ const BASE_PRODUCTS = [
     badge: null,
     badgeLabel: null,
     stock: 10,
-    images: ["assets/images/products/apple-watch-s10-46-alu-1.jpg", "assets/images/products/apple-watch-s10-46-alu-2.png", "assets/images/products/apple-watch-s10-46-alu-3.png"],
+    images: ["assets/images/products/apple-watch-s10-46-alu-1.png", "assets/images/products/apple-watch-s10-46-alu-2.png", "assets/images/products/apple-watch-s10-46-alu-3.png"],
     /* Renk seçilince galeride o rengin görseli gösterilir (Apple resmi görselleri). */
     colorImages: {
       "Jet Siyah": "assets/images/products/apple-watch-s10-46-alu-renk-jet-siyah.png"
@@ -308,7 +308,7 @@ const BASE_PRODUCTS = [
     badge: "new",
     badgeLabel: "Yeni",
     stock: 10,
-    images: ["assets/images/products/apple-watch-s10-42-ti-1.jpg", "assets/images/products/apple-watch-s10-42-ti-2.webp", "assets/images/products/apple-watch-s10-42-ti-3.webp"],
+    images: ["assets/images/products/apple-watch-s10-42-ti-1.jpg", "assets/images/products/apple-watch-s10-42-ti-2.webp", "assets/images/products/apple-watch-s10-42-ti-3.png"],
     desc: "Cilalı titanyum kasa, safir kristal ekran ve Milano Loop kayış. Series 10'un en prestijli hali, 42mm gövdede.",
     specs: [
       { key: "Ekran",      value: "42mm geniş açılı LTPO3 Hep Açık Retina OLED, 2000 nit, safir kristal" },
@@ -343,7 +343,7 @@ const BASE_PRODUCTS = [
     badge: null,
     badgeLabel: null,
     stock: 10,
-    images: ["assets/images/products/apple-watch-s10-46-ti-1.jpg", "assets/images/products/apple-watch-s10-46-ti-2.jpg", "assets/images/products/apple-watch-s10-46-ti-3.jpg"],
+    images: ["assets/images/products/apple-watch-s10-46-ti-1.jpg", "assets/images/products/apple-watch-s10-46-ti-2.jpg", "assets/images/products/apple-watch-s10-46-ti-3.png"],
     desc: "Series 10 titanyum serisinin 46mm gövdesi; Natural, Gold ve Silver seçenekleriyle. Safir kristal ekran ve Milano Loop kayış standart.",
     specs: [
       { key: "Ekran",      value: "46mm geniş açılı LTPO3 Hep Açık Retina OLED, 2000 nit, safir kristal" },
@@ -377,7 +377,7 @@ const BASE_PRODUCTS = [
     badge: "sale",
     badgeLabel: "%19 İndirim",
     stock: 10,
-    images: ["assets/images/products/apple-watch-s9-41-1.png", "assets/images/products/apple-watch-s9-41-2.jpg", "assets/images/products/apple-watch-s9-41-3.jpg"],
+    images: ["assets/images/products/apple-watch-s9-41-1.png", "assets/images/products/apple-watch-s9-41-2.png", "assets/images/products/apple-watch-s9-41-3.png"],
     /* Renk seçilince galeride o rengin görseli gösterilir (Apple resmi görselleri). */
     colorImages: {
       "Kırmızı": "assets/images/products/apple-watch-s9-41-renk-kirmizi.png",
@@ -533,7 +533,7 @@ const BASE_PRODUCTS = [
     badge: "new",
     badgeLabel: "Yeni",
     stock: 10,
-    images: ["assets/images/products/huawei-watch-gt6-pro-1.jpg", "assets/images/products/huawei-watch-gt6-pro-2.png", "assets/images/products/huawei-watch-gt6-pro-3.png"],
+    images: ["assets/images/products/huawei-watch-gt6-pro-1.jpg", "assets/images/products/huawei-watch-gt6-pro-2.png"],
     desc: "Watch GT 6 Pro, safir kristal ekranı ve titanyum detaylarıyla dayanıklılığı zarafetle birleştirir. EKG desteği ve gelişmiş sağlık sensörleriyle profesyonel takip.",
     specs: [
       { key: "Ekran",      value: "1,47 inç AMOLED, 466 × 466 piksel (317 PPI), safir cam" },
@@ -624,7 +624,7 @@ const BASE_PRODUCTS = [
     badge: null,
     badgeLabel: null,
     stock: 10,
-    images: ["assets/images/products/samsung-watch8-classic-1.jpg", "assets/images/products/samsung-watch8-classic-2.jpg", "assets/images/products/samsung-watch8-classic-3.png"],
+    images: ["assets/images/products/samsung-watch8-classic-1.png", "assets/images/products/samsung-watch8-classic-2.png", "assets/images/products/samsung-watch8-classic-3.png"],
     desc: "Galaxy Watch8 Classic, geri dönen fiziksel döner çerçevesiyle klasik saat hissini akıllı saat teknolojisiyle buluşturur. BioActive sensör ve Antioksidan İndeksi ile kapsamlı sağlık takibi.",
     specs: [
       { key: "Ekran",      value: "1,3 inç (34 mm) Super AMOLED, 438 × 438 piksel" },
@@ -655,7 +655,7 @@ const BASE_PRODUCTS = [
     badge: "new",
     badgeLabel: "Yeni",
     stock: 10,
-    images: ["assets/images/products/samsung-watch9-40-1.png"],
+    images: ["assets/images/products/samsung-watch9-40-1.png", "assets/images/products/samsung-watch9-40-2.png", "assets/images/products/samsung-watch9-40-3.png"],
     desc: "Galaxy Watch9, Samsung'un yeni nesil akıllı saati. Super AMOLED ekranı, BioActive sensörü ve Wear OS deneyimiyle sağlık ve verimliliği bileğinize taşır.",
     specs: [
       { key: "Ekran",      value: "1,3 inç (34 mm) Super AMOLED, 480 × 480, safir kristal, 3000 nite kadar" },
@@ -686,7 +686,7 @@ const BASE_PRODUCTS = [
     badge: null,
     badgeLabel: null,
     stock: 10,
-    images: ["assets/images/products/samsung-watch9-44-1.png"],
+    images: ["assets/images/products/samsung-watch9-44-1.png", "assets/images/products/samsung-watch9-44-2.png", "assets/images/products/samsung-watch9-44-3.png"],
     desc: "Galaxy Watch9'un 44mm gövdesi; daha geniş ekran, daha büyük batarya. Samsung Pay, çağrı ve bildirim yönetimiyle telefonunuzu cebinizde bırakın.",
     specs: [
       { key: "Ekran",      value: "1,5 inç (37,3 mm) Super AMOLED, 480 × 480, safir kristal, 3000 nite kadar" },
@@ -719,7 +719,7 @@ const BASE_PRODUCTS = [
     badge: null,
     badgeLabel: null,
     stock: 10,
-    images: ["assets/images/products/xiaomi-redmi-watch5-active-1.jpg", "assets/images/products/xiaomi-redmi-watch5-active-2.png", "assets/images/products/xiaomi-redmi-watch5-active-3.webp"],
+    images: ["assets/images/products/xiaomi-redmi-watch5-active-1.png", "assets/images/products/xiaomi-redmi-watch5-active-2.png", "assets/images/products/xiaomi-redmi-watch5-active-3.jpg"],
     desc: "Redmi Watch 5 Active, geniş ekranı ve Bluetooth arama desteğiyle bütçe dostu bir akıllı saat. 18 güne varan batarya ömrüyle şarj derdini unutun.",
     specs: [
       { key: "Ekran",      value: "2.0 inç TFT LCD" },
@@ -774,7 +774,7 @@ const BASE_PRODUCTS = [
     badge: "new",
     badgeLabel: "Yeni",
     stock: 10,
-    images: ["assets/images/products/xiaomi-redmi-watch6-1.jpg"],
+    images: ["assets/images/products/xiaomi-redmi-watch6-1.png", "assets/images/products/xiaomi-redmi-watch6-2.jpg"],
     desc: "Redmi Watch 6, yeni nesil AMOLED ekranı ve gelişmiş sağlık sensörleriyle Redmi akıllı saat serisinin en donanımlı üyesi.",
     specs: [
       { key: "Ekran",      value: "2,07 inç kare AMOLED, 432 × 514 piksel (324 PPI), 60 Hz, tepe parlaklık 2000 nit" },
@@ -802,7 +802,7 @@ const BASE_PRODUCTS = [
     badge: "sale",
     badgeLabel: "%21 İndirim",
     stock: 10,
-    images: ["assets/images/products/xiaomi-redmi-watch3-active-1.jpg", "assets/images/products/xiaomi-redmi-watch3-active-2.jpg", "assets/images/products/xiaomi-redmi-watch3-active-3.png"],
+    images: ["assets/images/products/xiaomi-redmi-watch3-active-1.jpg", "assets/images/products/xiaomi-redmi-watch3-active-2.png", "assets/images/products/xiaomi-redmi-watch3-active-3.png"],
     desc: "Redmi Watch 3 Active, akıllı saate ilk adım için ideal. Bluetooth arama, 100+ spor modu ve 12 güne varan batarya ömrünü uygun fiyata sunar.",
     specs: [
       { key: "Ekran",      value: "1.83 inç LCD" },
@@ -1076,7 +1076,7 @@ const BASE_PRODUCTS = [
     badge: "new",
     badgeLabel: "Yeni",
     stock: 10,
-    images: ["assets/images/products/jbl-tune-beam2-1.png", "assets/images/products/jbl-tune-beam2-2.png", "assets/images/products/jbl-tune-beam2-3.png"],
+    images: ["assets/images/products/jbl-tune-beam2-2.png", "assets/images/products/jbl-tune-beam2-3.png"],
     desc: "Tune Beam 2, kişiselleştirilebilir ses profili ve gelişmiş gürültü engellemesiyle günlük kullanımın standardını yükseltir. Ghost serisi şeffaf tasarım seçenekleriyle.",
     specs: [
       { key: "Tip",        value: "Kulak içi TWS (stick tasarım)" },
@@ -1222,7 +1222,7 @@ const BASE_PRODUCTS = [
     badge: "bestseller",
     badgeLabel: "Çok Satan",
     stock: 10,
-    images: ["assets/images/products/samsung-buds3-fe-1.png", "assets/images/products/samsung-buds3-fe-2.jpg", "assets/images/products/samsung-buds3-fe-3.jpg"],
+    images: ["assets/images/products/samsung-buds3-fe-1.png", "assets/images/products/samsung-buds3-fe-2.jpg", "assets/images/products/samsung-buds3-fe-3.png"],
     desc: "Galaxy Buds3 FE, ikonik blade tasarımı ve aktif gürültü engellemesiyle Galaxy deneyimini erişilebilir fiyata taşır. Galaxy AI çeviri desteğiyle dil engelini kaldırın.",
     specs: [
       { key: "Tip",        value: "Kulak içi TWS (blade tasarım)" },
@@ -1250,7 +1250,7 @@ const BASE_PRODUCTS = [
     badge: "new",
     badgeLabel: "Yeni",
     stock: 10,
-    images: ["assets/images/products/samsung-buds4-1.jpg", "assets/images/products/samsung-buds4-2.jpg", "assets/images/products/samsung-buds4-3.jpg"],
+    images: ["assets/images/products/samsung-buds4-1.png", "assets/images/products/samsung-buds4-2.png", "assets/images/products/samsung-buds4-3.jpg"],
     desc: "Galaxy Buds4, Samsung'un yeni nesil kablosuz kulaklığı. Gelişmiş ses işleme ve Galaxy ekosistemiyle sorunsuz entegrasyon sunar.",
     specs: [
       { key: "Tip",        value: "Kulak içi TWS" },
@@ -1406,7 +1406,7 @@ const BASE_PRODUCTS = [
     badge: "sale",
     badgeLabel: "%18 İndirim",
     stock: 10,
-    images: ["assets/images/products/xiaomi-redmi-buds8-lite-1.jpg", "assets/images/products/xiaomi-redmi-buds8-lite-2.png", "assets/images/products/xiaomi-redmi-buds8-lite-3.jpg"],
+    images: ["assets/images/products/xiaomi-redmi-buds8-lite-2.png", "assets/images/products/xiaomi-redmi-buds8-lite-3.jpg"],
     desc: "Redmi Buds 8 Lite, kompakt kılıfı ve rahat oturuşuyla gün boyu taşımaya uygun. Net çağrı kalitesi ve hızlı eşleşme özelliğiyle pratik.",
     specs: [
       { key: "Tip",        value: "Kulak içi TWS" },
@@ -1436,7 +1436,7 @@ const BASE_PRODUCTS = [
     badge: "sale",
     badgeLabel: "%17 İndirim",
     stock: 10,
-    images: ["assets/images/products/xiaomi-redmi-buds8-pro-1.jpg", "assets/images/products/xiaomi-redmi-buds8-pro-2.jpg", "assets/images/products/xiaomi-redmi-buds8-pro-3.jpg"],
+    images: ["assets/images/products/xiaomi-redmi-buds8-pro-1.jpg", "assets/images/products/xiaomi-redmi-buds8-pro-2.png", "assets/images/products/xiaomi-redmi-buds8-pro-3.jpg"],
     desc: "Redmi Buds 8 Pro, 55dB'ye varan aktif gürültü engellemesi ve 3 mikrofonlu yapay zekâ destekli çağrı filtresiyle serinin amiral gemisi. Kılıfla birlikte 33 saate varan kullanım.",
     specs: [
       { key: "Tip",        value: "Kulak içi TWS" },
@@ -1495,7 +1495,7 @@ const BASE_PRODUCTS = [
     badge: "new",
     badgeLabel: "Yeni",
     stock: 10,
-    images: ["assets/images/products/apple-35w-dual-adapter-1.png", "assets/images/products/apple-35w-dual-adapter-2.png", "assets/images/products/apple-35w-dual-adapter-3.jpg"],
+    images: ["assets/images/products/apple-35w-dual-adapter-1.png", "assets/images/products/apple-35w-dual-adapter-2.png", "assets/images/products/apple-35w-dual-adapter-3.png"],
     desc: "İki USB-C portuyla iPhone ve Apple Watch'ınızı aynı anda şarj edin. Tek adaptörle iki cihaz, tek prizle daha az kablo karmaşası.",
     specs: [
       { key: "Güç",        value: "35W (iki port toplamı)" },
@@ -1522,7 +1522,7 @@ const BASE_PRODUCTS = [
     badge: "new",
     badgeLabel: "Yeni",
     stock: 10,
-    images: ["assets/images/products/apple-crossbody-strap-1.jpg", "assets/images/products/apple-crossbody-strap-2.jpg", "assets/images/products/apple-crossbody-strap-3.webp"],
+    images: ["assets/images/products/apple-crossbody-strap-1.png", "assets/images/products/apple-crossbody-strap-2.png", "assets/images/products/apple-crossbody-strap-3.webp"],
     desc: "Apple Crossbody Strap, iPhone kılıfınıza manyetik olarak takılır ve telefonunuzu omzunuzda taşımanızı sağlar. Dokuma yapısı ve ayarlanabilir uzunluğuyla gün boyu konfor.",
     specs: [
       { key: "Tip",        value: "Çapraz askı (crossbody)" },
@@ -1576,7 +1576,7 @@ const BASE_PRODUCTS = [
     badge: "sale",
     badgeLabel: "%17 İndirim",
     stock: 10,
-    images: ["assets/images/products/samsung-25w-adapter-1.jpg", "assets/images/products/samsung-25w-adapter-2.jpg", "assets/images/products/samsung-25w-adapter-3.png"],
+    images: ["assets/images/products/samsung-25w-adapter-3.png"],
     desc: "Samsung 25W Süper Hızlı Şarj adaptörü, uyumlu Galaxy cihazlarınızı kısa sürede şarj eder. PPS desteğiyle akıllı güç yönetimi sağlar.",
     specs: [
       { key: "Güç",        value: "25W" },
@@ -1602,7 +1602,7 @@ const BASE_PRODUCTS = [
     badge: null,
     badgeLabel: null,
     stock: 10,
-    images: ["assets/images/products/samsung-45w-adapter-1.jpg", "assets/images/products/samsung-45w-adapter-2.png", "assets/images/products/samsung-45w-adapter-3.jpg"],
+    images: ["assets/images/products/samsung-45w-adapter-1.jpg", "assets/images/products/samsung-45w-adapter-2.png", "assets/images/products/samsung-45w-adapter-3.png"],
     desc: "45W Süper Hızlı Şarj 2.0 desteğiyle Galaxy S ve Tab serisi cihazlarınızı en yüksek hızda şarj edin. Dizüstü bilgisayarlar için de yeterli güç.",
     specs: [
       { key: "Güç",        value: "45W" },
@@ -1687,7 +1687,7 @@ const BASE_PRODUCTS = [
     badge: "sale",
     badgeLabel: "%17 İndirim",
     stock: 10,
-    images: ["assets/images/products/jbl-go5-1.webp", "assets/images/products/jbl-go5-2.webp"],
+    images: ["assets/images/products/jbl-go5-1.jpg", "assets/images/products/jbl-go5-2.jpg", "assets/images/products/jbl-go5-3.jpg"],
     desc: "JBL Go 5, avuç içi boyutunda ama JBL Pro Sound gücünde. IP67 su ve toz direnciyle plajda, havuzda ve doğada gönül rahatlığıyla kullanın.",
     specs: [
       { key: "Tip",        value: "Taşınabilir Bluetooth hoparlör" },
@@ -1714,7 +1714,7 @@ const BASE_PRODUCTS = [
     badge: "new",
     badgeLabel: "Yeni",
     stock: 10,
-    images: ["assets/images/products/jbl-partybox-club120-1.png", "assets/images/products/jbl-partybox-club120-2.png", "assets/images/products/jbl-partybox-club120-3.png"],
+    images: ["assets/images/products/jbl-partybox-club120-1.png", "assets/images/products/jbl-partybox-club120-2.jpg", "assets/images/products/jbl-partybox-club120-3.png"],
     desc: "PartyBox Club 120, güçlü bası ve senkronize ışık şovuyla partinin merkezine yerleşir. Taşıma kolu ve dahili bataryasıyla eğlenceyi istediğiniz yere götürün.",
     specs: [
       { key: "Tip",        value: "Taşınabilir parti hoparlörü" },
