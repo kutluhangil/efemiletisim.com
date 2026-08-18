@@ -740,10 +740,10 @@
   flex-shrink: 0;
 }
 
-/* Kart numarası/CVV alanları KALDIRILDI: ödeme iyzico'nun kendi sayfasında
+/* Kart numarası/CVV alanları KALDIRILDI: ödeme PayTR'nin kendi iframe'inde
    alınır, bu sitede kart verisi toplanmaz (PCI kapsamı dışında kalmak için). */
 
-/* Iyzico branding */
+/* Ödeme sağlayıcı rozeti */
 .provider-badge {
   display: flex;
   align-items: center;
