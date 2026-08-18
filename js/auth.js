@@ -131,16 +131,22 @@ async function deleteAccount(password) {
   return result;
 }
 
-/* ─── Çıkış ─── */
-async function logout() {
+/* ─── Çıkış ───
+   `silent: true` yalnız oturumu kapatır; toast göstermez ve sayfayı
+   değiştirmez (admin paneli gibi kendi yönlendirmesini yapan ekranlar
+   için). */
+async function logout({ silent = false } = {}) {
   const result = await firebaseLogout();
   if (!result.success) {
-    showToast(result.msg, 'error');
-    return;
+    if (!silent) showToast(result.msg, 'error');
+    return result;
   }
   clearGuest();
+  if (silent) return result;
+
   showToast('Başarıyla çıkış yapıldı.', 'success');
   setTimeout(() => { window.location.href = 'index.html'; }, 800);
+  return result;
 }
 
 /* ─── Navbar oturum durumunu güncelle ─── */
@@ -177,6 +183,21 @@ async function requireAuth({ allowGuest = false, redirectTo = 'hesap.html' } = {
   const target = `${redirectTo}?redirect=${encodeURIComponent(window.location.href)}`;
   window.location.href = target;
   return false;
+}
+
+/* ─── Firebase ID token ───
+   Ödeme/sipariş API'sine "bu istek gerçekten bu üyeye ait" kanıtı olarak
+   gönderilir; sunucu tokenı Firebase Admin ile doğrular. Üye değilse null
+   döner ve sipariş misafir siparişi olarak açılır. */
+async function getIdToken() {
+  await authReady;
+  if (!session.user) return null;
+  try {
+    return await session.user.getIdToken();
+  } catch (err) {
+    console.error('[auth] ID token alınamadı:', err.message);
+    return null;
+  }
 }
 
 /* ─── Form validasyonu ─── */
@@ -216,6 +237,7 @@ Object.assign(window, {
   isLoggedIn,
   isGuest,
   getCurrentUser,
+  getIdToken,
   continueAsGuest,
   setGuest,
   clearGuest,
@@ -235,6 +257,7 @@ export {
   isLoggedIn,
   isGuest,
   getCurrentUser,
+  getIdToken,
   continueAsGuest,
   setGuest,
   clearGuest,

@@ -307,6 +307,7 @@
       <span>© 2024 efemiletisim.com</span>
       <div class="footer-legal-links">
         <a href="gizlilik-kvkk.html">Gizlilik &amp; KVKK</a>
+        <a href="on-bilgilendirme-formu.html">Ön Bilgilendirme Formu</a>
         <a href="mesafeli-satis-sozlesmesi.html">Mesafeli Satış Sözleşmesi</a>
         <a href="iptal-iade.html">İptal ve İade</a>
       </div>
@@ -589,7 +590,8 @@ function renderOrders() {
           <div style="display:flex;flex-direction:column;gap:var(--space-2);margin-bottom:var(--space-4)">
             ${(o.items || []).map(item => `
               <div style="display:flex;justify-content:space-between;font-size:0.875rem">
-                <span>${item.name} × ${item.qty}</span>
+                <span>${item.name}${[item.color, item.size].filter(Boolean).length
+                  ? ` <span style="color:var(--text-muted)">(${[item.color, item.size].filter(Boolean).join(' · ')})</span>` : ''} × ${item.qty}</span>
                 <span style="font-weight:600">${formatPrice(item.price * item.qty)}</span>
               </div>`).join('')}
           </div>

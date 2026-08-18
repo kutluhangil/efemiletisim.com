@@ -3,34 +3,470 @@
 Bu dosya projede yapılan her ekleme, değişiklik ve kaldırmayı kayıt altına alır.
 En yeni kayıtlar en üstte.
 
-## 2026-08-15 (devam 3)
+## 2026-08-18 (kurulum teşhisi)
 
-### Gerçek iyzico ödeme entegrasyonu, admin Firebase Auth, sipariş yönetimi Firestore'a taşındı
-- Add: `api/` altında Vercel Functions — `create-payment.js` (iyzico 3D Secure Initialize),
-  `payment-callback.js` (3DS finalize + sipariş yazımı), `payment-webhook.js`
-  (`X-IYZ-SIGNATURE-V3` doğrulamalı reconciliation), `create-order.js` (EFT sipariş).
-  `js/payment.js` artık kart bilgisini simüle etmiyor, gerçek backend'i çağırıyor.
-  `odeme.html`'e 3DS doğrulama modalı (iframe) eklendi.
-- Add: `api/_lib/pricing.js` — sepet toplamı `js/data.js` → `BASE_PRODUCTS`'tan sunucu
-  tarafında yeniden hesaplanıyor, client'ın gönderdiği fiyata güvenilmiyor (fiyat
-  manipülasyonu artık mümkün değil).
-- Add: `api/_lib/orders.js` — siparişler (üye + misafir) artık Firebase Admin SDK ile
-  Firestore `orders` koleksiyonuna sunucu tarafında yazılıyor; misafir siparişleri artık
-  kayboluyor değil, admin panelinde görünüyor. Client'ın Firestore'a doğrudan sahte
-  "başarılı sipariş" yazması artık mümkün değil (`firestore.rules` → `orders.create: false`).
-- Fix (CRITICAL): `admin.html` içindeki hardcoded admin şifresi (`admin`/`efemi2024`, sayfa
-  kaynağında düz metin) kaldırıldı. Admin girişi artık Firebase Authentication + "admin"
-  custom claim ile korunuyor (`scripts/set-admin-claim.js` ile atanıyor).
-- Change: `admin.html` Siparişler sekmesi artık `localStorage` yerine Firestore `orders`
-  koleksiyonundan okuyor — admin hangi cihazdan girerse girsin aynı siparişleri görür.
-- Remove: `js/data.js` içindeki localStorage tabanlı sipariş defteri
-  (`getAllOrders`/`addOrderToLedger`/vb.) ve `js/firebase-auth.js` içindeki client-side
-  `saveOrderToFirestore`/`sendOrderConfirmationMail` kaldırıldı (yerini backend aldı).
-- Fix: `gizlilik-kvkk.html` — "verileriniz yurt dışına aktarılmaz" ifadesi, sitenin fiilen
-  kullandığı Firebase/Google Cloud altyapısını yansıtacak şekilde düzeltildi.
-- Docs: `docs/ARKADAS-YAPILACAKLAR.md` tamamen güncellendi — artık sadece hesap erişimi
-  (iyzico sandbox anahtarı, Firebase admin hesabı, Vercel env değişkenleri) gerektiren
-  adımları listeliyor.
+### `/api/payment/config` artık yapılandırma hatasının SEBEBİNİ söylüyor
+Panel canlıya alınırken `FIREBASE_SERVICE_ACCOUNT` okunamadı, ama sunucunun
+verdiği tek bilgi `store: false` idi. "Değişken hiç tanımlı değil", "tanımlı ama
+yanlış şey yapıştırılmış" ve "değer kırpılmış" durumlarının hepsi aynı görünüyordu;
+her tahmin bir deploy turu demekti.
+
+- Add: `serviceAccountDiagnostics()` (`api/_lib/env.js`) — `present` / `parsed` /
+  `reason` (`not_set`, `not_json_not_base64`, `invalid_json`, `missing_fields`)
+  ve çözülebildiyse `projectId`.
+- Add: `valueShapeHint()` — değer çözülemediğinde NE olduğunu sınıflandırır
+  (tırnak içinde yapıştırılmış, dosya yolu/adı, sadece private_key, web API key)
+  ve uzunluğunu verir. Kurulumdaki hatayı ilk bakışta gösterdi: 182 karakter =
+  Firebase Console'daki Admin SDK kod örneği, 24 karakter = e-posta adresi.
+- Add: `adminEmailsDiagnostics()` (`api/_lib/admin-auth.js`) — kaç geçerli adres
+  var, kaçı bozuk. Aynı hata `ADMIN_EMAILS`'e de yapılmıştı ve hiçbir yerden
+  görünmüyordu; yalnız giriş denemesinde 403 alınıyordu.
+
+**Sır sızdırmama kuralı:** Hiçbiri değerin İÇERİĞİNDEN parça döndürmez.
+Servis hesabı tarafında yalnız `project_id` verilir — o da zaten
+`js/firebase-config.js` içinde açıkta. Yönetici adresleri hiç verilmez: kişisel
+veri olmasının yanı sıra, yönetici hesaplarının listesi saldırgan için doğrudan bir
+hedef listesidir. Sınıf ve uzunluk bilgisi de yalnız değer ZATEN çözülemediğinde
+hesaplanır, yani çalışan bir anahtar hakkında hiçbir şey söylenmez.
+
+- Change: `dev-server.js` → `api/` altındaki tüm modüller her istekte tazeleniyor
+  (önceden yalnız handler dosyası; `api/_lib/*` değişiklikleri sunucu yeniden
+  başlatılana kadar görünmüyordu) ve `vercel.json` başlıkları yerelde de uygulanıyor.
+
+İlgili PR'lar: #14, #15, #16.
+
+## 2026-08-18 (CSP: ödeme sayfası sıkılaştırıldı)
+
+### `odeme-guvenli.html` artık `'unsafe-inline'` olmadan servis ediliyor
+Talep: `docs/ARKADAS-YAPILACAKLAR.md` → Prompt 6 (CSP sıkılaştırma). Talep tüm siteyi
+kapsıyordu; **kapsamı bilerek daralttık, sebebi aşağıda.**
+
+Kart formunun taşındığı sayfa e-skimming açısından sitenin en kritik yeri. Bu sayfa
+artık satır içi hiçbir script, style bloğu veya `style=""` attribute'u içermiyor;
+kendisine özel ve `script-src 'self' https://www.paytr.com` ile sınırlı bir CSP ile
+servis ediliyor. Sayfaya enjekte edilen bir script tarayıcı tarafından çalıştırılmaz.
+
+- Add: `js/theme-init.js` — `<head>` içindeki tema (FOUC) betiği dışarı alındı.
+- Add: `css/odeme-guvenli.css` — sayfanın stilleri; `style=""` attribute'ları
+  sınıflara çevrildi.
+- Add: `js/odeme-guvenli.js` — sayfanın iframe/özet mantığı.
+- Change: `vercel.json` → `/odeme-guvenli(.html)?` için ayrı, sıkı CSP.
+  Sitenin geri kalanı eski (gevşek) politikayla kalır.
+- Fix: `js/main.js` → toast kapatma düğmesi satır içi `onclick` yerine
+  `addEventListener` kullanıyor. Satır içi handler sıkı CSP altında SESSİZCE
+  çalışmaz; ödeme sayfasındaki bir bildirimin kapatma düğmesi ölü kalırdı.
+- Change: `dev-server.js` → `vercel.json` başlıklarını yerelde de uyguluyor.
+  Aksi hâlde sıkı CSP yalnız canlıda ortaya çıkar ve "yerelde çalışıyordu" durumu doğardı.
+
+**Neden tüm site değil:** `'unsafe-inline'` ancak sayfadaki satır içi handler/script'in
+**tamamı** kaldırıldığında düşürülebilir — kısmi temizlik sıfır güvenlik kazancı verir.
+Sitede 16 sayfada ~300 statik `on*="…"` handler'ı ve bunlara ek olarak ürün kartı,
+sepet satırı, admin tablosu gibi **çalışma anında üretilen** işaretlemede yüzlerce handler
+daha var; bunların tamamı olay delegasyonuna çevrilmeli. Bu, sitenin her etkileşimli
+öğesine dokunan ve regresyon riski yüksek bir refactor. Ödeme sağlayıcısı geçişi ve panel
+yeniden yazımının hemen ardından tek seferde yapılması doğru bulunmadı; kritik sayfa
+bugün korunuyor, kalan sayfalar ayrı bir çalışma olarak duruyor.
+
+## 2026-08-18 (katalog, kupon, gerçek admin auth)
+
+### Admin paneli Firestore + Storage üzerine taşındı; yetki artık sunucuda
+Talep: `docs/ARKADAS-YAPILACAKLAR.md` → Prompt 1 ve Prompt 2. Panelin ürün
+yönetimi `localStorage` yazıyordu: bir ürün eklendiğinde yalnızca O TARAYICIDA
+görülüyordu, siteyi açan müşteri görmüyordu. Giriş ekranı da sayfanın kaynağındaki
+sabit bir şifreyi kontrol ediyordu — bu bir yetki kontrolü değildir.
+
+**Yetkilendirme**
+
+- Add: `api/verify-admin.js` — panelin kapısı. Firebase ID token sunucuda
+  doğrulanır, e-posta doğrulanmış olmalı ve `ADMIN_EMAILS` listesinde bulunmalı.
+- Change: `admin.html` giriş ekranı gerçek Firebase e-posta/şifre girişi yapıyor;
+  sabit kullanıcı adı/şifre (`ADMIN_CREDS`) ve `sessionStorage` bayrağı kaldırıldı.
+  Kimlik doğru ama yetki yoksa oturum açık bırakılmıyor, hemen kapatılıyor.
+- Change: `admin.html` → Ayarlar ekranındaki istemci tarafı şifre değiştirme
+  kaldırıldı; yerine oturum sahibi bilgisi ve Firebase şifre sıfırlama e-postası geldi.
+- Add: `adminGate(req, res)` — tüm yönetici uçlarının ortak kapısı
+  (401 kimlik yok / 403 yetki yok / 503 yapılandırma yok).
+
+**Ürün kataloğu**
+
+- Add: `api/admin/products.js` — GET/POST/DELETE. `priceKurus` alanı
+  İSTEMCİDEN ALINMAZ, `price` üzerinden sunucuda türetilir; ödeme akışı yalnız
+  bu alanı okuduğu için panelde girilen fiyat ile tahsil edilen tutar birbirine bağlıdır.
+- Add: `api/_lib/product-schema.js` — serbest metinler kırpılır, `javascript:`
+  gibi görsel yolları reddedilir, varyant sku'ları tekilleştirilir.
+- Add: `api/_lib/catalog-store.js` — Firestore `products` koleksiyonu statik
+  `catalog.json` üzerine biner (aynı id → Firestore kazanır). Firestore okunamazsa
+  statik listeye düşülür: katalog servisi çökse bile ödeme akışı durmaz.
+- Add: `api/catalog.js` — vitrinin okuduğu, herkese açık uç.
+- Change: `js/data.js` → `PRODUCTS` artık BASE_PRODUCTS + sunucu kataloğu.
+  `whenCatalogReady()` eklendi; sayfalar hem DOM'u hem katalogu bekliyor, böylece
+  yalnızca Firestore'da olan bir ürünün detay sayfası "bulunamadı" diye yönlendirilmiyor.
+- Change: `index.html`, `urunler.html`, `urun-detay.html`, `sepet.html`
+  bu bekleyişi kullanıyor.
+
+**Görsel yükleme (Firebase Storage)**
+
+- Add: `api/admin/upload.js` — görsel Admin SDK ile yüklenir; istemcinin
+  Storage'a yazma yetkisi yoktur. İçerik türü gönderilen `contentType` alanına değil
+  dosyanın İLK BAYTLARINA bakılarak belirlenir; dosya adı sunucuda yeniden üretilir
+  (dizin geçişi ve üzerine yazma riski). Sınır 3 MB.
+- Change: `admin.html` görseli artık ürün kaydının içine gömülü `data:` URI
+  olarak değil, Storage URL'si olarak saklıyor.
+
+**Kuponlar**
+
+- Add: `api/admin/coupons.js` + `api/_lib/coupons.js` — kupon tanımları
+  Firestore `coupons` koleksiyonunda. Panel ₺ girer, kuruşa çevrilerek yazılır.
+- Add: `api/coupon/validate.js` — sepetin kullandığı, herkese açık uç. İstemci
+  yalnız KODU gönderir; indirim sunucuda hesaplanır.
+- Change: `api/_lib/orders.js` → `priceBasket()` asenkron oldu ve kupon
+  kodunu kabul ediyor. İndirim sepeti aşamaz; toplam sıfıra inerse sipariş reddedilir
+  (0 ₺ tahsil edilemez).
+- Change: `js/cart.js` → sabit `COUPONS` objesi kaldırıldı. Sepet değişince
+  uygulanan kupon düşürülüyor: minimum tutar şartı bozulmuş bir indirimin ekranda
+  kalması ödeme adımında sürpriz yapardı.
+- Change: `odeme.html` özetine kupon satırı eklendi; tutar `/api/coupon/validate`'ten.
+- Add: `admin.html` → "Kuponlar" sekmesi (liste, ekle/düzenle, aç/kapat, sil).
+
+**Kurallar (deploy SİZDE)**
+
+- Change: `firestore.rules` → `products` okumaya açık / yazmaya kapalı,
+  `coupons` tamamen kapalı (istemci kupon listesini göremez).
+- Add: `storage.rules` — `products/**` herkese açık okuma, yazma kapalı.
+  Yükleme Admin SDK ile yapıldığı için kuralları gevşetmeye gerek yok.
+- Add: `firebase.json` → `storage.rules` bağlandı.
+
+**Diğer**
+
+- Add: `docs/ADMIN-KURULUMU.md` — mimari, ortam değişkenleri, yönetici hesabı
+  açma, kural yayınlama ve canlıya çıkış doğrulama listesi.
+- Add: `FIREBASE_STORAGE_BUCKET` (`.env.example`); boş bırakılırsa
+  `<project_id>.firebasestorage.app` varsayılır.
+- Add: `npm run test:admin:catalog` — 52 test. `npm test` toplam 180 test.
+- Fix: `dev-server.js` artık `api/` altındaki TÜM modülleri her istekte
+  tazeliyor; önceden yalnız handler dosyası tazeleniyordu ve `api/_lib/*` değişiklikleri
+  sunucu yeniden başlatılana kadar görünmüyordu.
+
+## 2026-08-18 (devam)
+
+### Sipariş yönetimi: admin paneli artık TÜM siparişleri sunucudan görüyor
+Talep: `docs/ARKADAS-YAPILACAKLAR.md` → Prompt 3. Talebin ilk iki maddesi (top-level
+`orders` koleksiyonu + misafir siparişlerinin sunucu tarafında kaydı) PayTR/iyzico
+çalışmasıyla birlikte zaten yapılmıştı; eksik olan panel tarafı tamamlandı.
+
+**Tespit edilen eksik:** `admin.html` sipariş ekranı `getAllOrders()` ile
+`localStorage` okuyordu — yani yalnızca O TARAYICIDA verilmiş siparişleri gösteriyordu.
+Firestore'daki gerçek siparişler (üye + misafir) panelde hiç görünmüyordu; durum
+değiştirmek de yalnız yerel deftere yazıyor, müşterinin profiline yansımıyordu.
+
+- Add: `api/admin/orders.js` — `GET` tüm siparişleri listeler (üye + misafir),
+  `POST` sipariş durumunu değiştirir. Yalnız sevkiyat durumları atanabilir
+  (Hazırlanıyor / Kargoda / Teslim Edildi / İptal); ödeme durumları (`paid` vb.) elle
+  değiştirilemez, onları yalnız ödeme bildirimi yazar.
+- Add: `api/_lib/admin-auth.js` — yetki SUNUCUDA doğrulanıyor: Firebase ID token +
+  doğrulanmış e-posta + `ADMIN_EMAILS` listesi. Panelin istemci tarafı şifresi bir
+  yetki kontrolü değildir; bu uç ondan bağımsız korunur.
+- Add: `store.listOrders()`, `store.setOrderStatus()`, `store.syncUserOrderStatus()`.
+  Sonuncusu üye siparişlerinde `users/{uid}.orders` dizisindeki kopyayı transaction
+  içinde günceller — müşteri `profil.html` sayfasında güncel durumu görür.
+- Change: `admin.html` sipariş ekranı sunucudan besleniyor; sunucu yapılandırılmamışsa
+  eski yerel deftere düşüyor ve bunu ekranda **uyarı şeridiyle** açıkça söylüyor
+  (hangi ortam değişkeninin eksik olduğu dahil).
+- Change: `api/_lib/settle.js` → terminal durumlara `processing/shipped/delivered` eklendi;
+  geç gelen bir ödeme bildirimi kargoya verilmiş siparişi geri alamaz.
+- Add: `npm run test:admin` — 29 test (yetkisiz erişim 401/403/503, üye+misafir listesi,
+  geçersiz durum reddi, profil senkronu, geç bildirim koruması). `npm test` hepsini koşar.
+
+**Kalan:** `admin.html` hâlâ istemci tarafı bir şifre ekranı gösteriyor. Bu ekran güvenlik
+değildir (kaynak kodda görünür), yalnızca paneli kazara açmayı önler — gerçek sipariş verisi
+sunucu yetkisiyle korunuyor. Panelin tamamının Firebase girişine bağlanması Prompt 2'nin işi.
+
+## 2026-08-18
+
+### Sipariş e-postası gitmiyordu — teşhis ve düzeltme
+Misafir olarak verilen bir siparişte ne müşteriye ne işletmeye mail ulaştı.
+Üç ayrı eksik tespit edildi:
+
+1. **Misafir siparişlerinde hiç mail gönderilmiyordu.** `odeme.html` içindeki yerel
+   (sunucusuz) sipariş akışı yalnızca ÜYE siparişlerinde `sendOrderConfirmationMail()`
+   çağırıyordu; misafir dalında hiçbir mail çağrısı yoktu.
+2. **İşletmeye sipariş bildirimi hiç yoktu.** Hiçbir kod yolu yeni siparişi işletmeye
+   haber vermiyordu (`sendSupportNotificationMail` yalnız ürün sorusu formunda kullanılıyordu).
+3. Canlıda `orderApiEnabled: false` — `FIREBASE_SERVICE_ACCOUNT` girilmediği için sunucu
+   sipariş API'si kapalı; sipariş yalnızca müşterinin tarayıcısındaki yerel deftere yazıldı.
+
+- Add: `api/_lib/notify-merchant.js` — işletme bildirim maili (sipariş no, durum, ödeme
+  tipi, tutar, müşteri iletişim bilgisi, teslimat adresi, fatura bilgisi, SKU'lu ürün tablosu).
+- Change: `api/order/eft.js` ve `api/_lib/settle.js` — sipariş oluşunca / ödeme
+  onaylanınca işletmeye de bildirim kuyruğa giriyor (müşteri onayına ek olarak).
+- Change: `odeme.html` — sunucu API'si kapalıyken bile işletmeye sipariş bildirimi
+  gönderiliyor (üye/misafir fark etmeksizin). Firestore kuralları `destek@` adresine
+  yazmaya izin verdiği için bu yol misafirlerde de çalışıyor.
+- Change: `docs/EMAIL-KURULUMU.md` — hangi mailin hangi koşulda gittiği netleştirildi;
+  müşteri onay mailinin neden sunucu tarafı gerektirdiği (Firestore kuralları) açıklandı.
+- Change: Akış testlerine işletme bildirimi kontrolü eklendi (`52 + 47` test).
+
+**Not:** Bu düzeltmeler mailin ÜRETİLMESİNİ sağlar; gerçekten gönderilmesi için Firebase
+"Trigger Email from Firestore" extension'ının kurulu olması şart (bkz. `docs/EMAIL-KURULUMU.md`).
+Müşteriye onay maili için ayrıca `FIREBASE_SERVICE_ACCOUNT` ortam değişkeni gerekir.
+
+## 2026-08-17 (devam)
+
+### Ödeme sağlayıcısı değişti: iyzico → PayTR (iFrame API)
+Kurulum ve işletim rehberi: `docs/PAYTR-ENTEGRASYON.md`.
+Kart verisi bu projede hâlâ hiçbir yerde toplanmıyor; değişen yalnız sağlayıcı.
+
+**Sunucu tarafı**
+- Add: `api/_lib/paytr.js` — PayTR iFrame API istemcisi. `paytr_token` üretimi
+  (merchant_id + user_ip + merchant_oid + email + payment_amount + user_basket +
+  no_installment + max_installment + currency + test_mode + salt → HMAC-SHA256 → base64),
+  bildirim `hash` doğrulaması, sepet (base64 JSON) ve kuruş biçimlendirme.
+- Add: `api/payment/notify.js` — PayTR "Bildirim URL"si. **Sonucun tek yetkili kaynağı.**
+  `hash` doğrulanmadan hiçbir sipariş durumu değişmez; işlem bitince gövdesi
+  **tam olarak `OK`** olan yanıt döner (aksi hâlde PayTR bildirimi tekrarlar).
+  Aynı bildirim tekrar gelse de ikinci kez işlenmez.
+- Change: `api/payment/initialize.js` — iyzico Checkout Form yerine PayTR get-token.
+  Sipariş yine ödeme öncesi `awaiting_payment` olarak açılıyor, tutar yine sunucuda
+  hesaplanıyor, sepet satırları varyant adıyla (`Ürün (Renk · Beden)`) gönderiliyor.
+- Change: `api/_lib/settle.js` — PayTR bildirim modeline göre yeniden yazıldı.
+  Tahsil edilen tutar, para birimi veya test/canlı ortam sipariş kaydıyla uyuşmazsa sipariş `paid` değil
+  **`pending_review`** olur; sevkiyat başlamaz, mail gitmez.
+- Change: `api/_lib/env.js` — `PAYTR_*` değişkenleri. **Varsayılan test modu**:
+  `PAYTR_TEST_MODE` açıkça `0` yapılmadıkça gerçek para çekilmez.
+- Change: Sipariş numarası artık **alfanumerik** (`EFM260817A5973E`) — PayTR
+  `merchant_oid` alanı tire/boşluk kabul etmiyor. Eski tireli numaralar okunmaya
+  devam ediyor (geçmiş siparişler bozulmasın diye).
+- Remove: `api/_lib/iyzico.js`, `api/payment/callback.js`, `api/payment/webhook.js`
+  ve iyzico'ya özel yardımcılar (`toGsmNumber`, `IDENTITY_PLACEHOLDER`).
+
+**Arayüz**
+- Add: `odeme-guvenli.html` — PayTR ödeme formunu iframe içinde açan, üzerinde
+  başka iş mantığı çalışmayan sade sayfa (e-skimming yüzeyini küçültmek için).
+- Change: `odeme.html` ve `js/payment.js` PayTR akışına bağlandı; kart alanı yok,
+  test modunda müşteriye açık uyarı gösteriliyor.
+- Change: `odeme-sonuc.html` — bildirim henüz ulaşmadıysa "ödeme tamamlanmadı"
+  yerine **"sonucunuz kontrol ediliyor"** gösteriliyor (PayTR akışı asenkron).
+- Change: Tüm sayfalardaki ödeme rozeti ve yasal metinlerdeki sağlayıcı adı
+  PayTR olarak güncellendi (`mark-paytr`, `.provider-badge`).
+- Change: `vercel.json` CSP — `frame-src` ve `script-src` için `https://www.paytr.com`.
+
+**Test**
+- Change: `npm run test:payment` → **52 birim + 45 akış testi**. Akış testleri
+  PayTR'yi taklit eden yerel bir sunucuya karşı koşuyor ve gönderilen
+  `paytr_token` imzasını bağımsız olarak yeniden hesaplayıp doğruluyor.
+  Kapsananlar: imzalı bildirim → `paid`, bildirim tekrarı → tek etki, tutar
+  uyuşmazlığı → `pending_review`, ortam/para birimi uyuşmazlığı → `pending_review`,
+  bozuk imza → 401 ve değişiklik yok,
+  `status=failed` → `failed`, "OK" gövdesi, doğrulama kapıları, hız sınırı.
+
+**Dokümantasyon**
+- Add: `docs/PAYTR-ENTEGRASYON.md` (mimari, kurulum, kabul testleri, canlıya geçiş,
+  işletim, mutabakat, sık hatalar, güvenlik kuralları).
+- Change: `docs/IYZICO-ENTEGRASYON.md` → `docs/ARSIV-IYZICO-ENTEGRASYON.md` (arşiv notu ile).
+  `docs/IYZICO-DENETIM-RAPORU.md` başına sağlayıcı değişikliği notu eklendi —
+  mevzuat/KVKK/PCI/fiyat bütünlüğü bulguları aynen geçerli.
+- Change: `CLAUDE.md` ödeme kuralları, `README.md`, `.env.example`,
+  `docs/ARKADAS-YAPILACAKLAR.md` PayTR'ye göre güncellendi.
+
+## 2026-08-17
+
+### Katalog doğruluk denetimi: teknik özellikler, renk görselleri
+Talep: `docs/visual-fix.md`. Tam rapor: `docs/KATALOG-DENETIM-RAPORU.md`.
+Her değer üreticinin kendi teknik özellik sayfasından doğrulandı; doğrulanamayan
+mevcut iddialar silindi (uydurma yok).
+
+- Fix: **Huawei WiFi Mesh X3 Pro "Wi-Fi 6" olarak satılıyordu; ürün Wi-Fi 7.**
+  Hız, ethernet portu ve model kodu (GAEA2-PLM21) da düzeltildi.
+- Fix: Huawei Watch GT 6 / GT 6 Pro'da **Bluetooth 5.2 → 6.0** (GT 5 Pro ve Fit 4
+  gerçekten 5.2, onlar korundu).
+- Fix: GT 6 pil ömrü "tipik" diye yazılan değerler aslında **maksimum** kullanım
+  değeriymiş (41 mm: maks 14 / tipik 7 gün, 46 mm: maks 21 / tipik 12 gün).
+- Fix: Apple Watch Series 10 titanyumda **var olmayan "Silver" kaplama** iddiası
+  kaldırıldı (Apple: Natural / Gold / Slate).
+- Fix: Apple Watch SE 3'te Apple'ın belirtmediği **IP6X** iddiası kaldırıldı;
+  Wi-Fi'nin yalnız 2,4 GHz olduğu eklendi.
+- Fix: Huawei Watch Fit 4'te doğrulanamayan **SpO2** iddiası kaldırıldı.
+- Fix: Huawei FreeBuds SE 3 **BT 5.3 → 5.4**; "kılıfla uzun kullanım" yerine
+  9 saat + 42 saat; IP54'ün yalnız kulaklıklar için geçerli olduğu notu.
+- Fix: Samsung Galaxy Watch9'da doğrulanamayan **IP68** kaldırıldı (5 ATM +
+  MIL-STD-810H); Galaxy Buds4 Pro **IP54 → IP57**.
+- Fix: AirPods Pro 3 açıklamasından Apple TR sayfasında geçmeyen "köpük katmanlı
+  uçlar" ve "Canlı Çeviri" ifadeleri çıkarıldı.
+- Fix: Xiaomi Redmi Watch 6 ve Redmi Buds 8 ailesindeki ölçüsüz ifadeler
+  ("uzun ömürlü", "kılıfla uzun süreli kullanım") gerçek değerlerle değiştirildi.
+- Add: **Renk seçilince galeri o rengi gösteriyor.** `js/data.js` ürünlerine
+  opsiyonel `colorImages` haritası, `urun-detay.html`'e `showColorImage()` eklendi;
+  renk görselleri galeriye küçük resim olarak da giriyor. Daha önce müşteri
+  "Roze Altın" seçse de ekranda siyah ürün kalıyordu.
+- Add: `scripts/fetch-apple-watch-images.mjs` — Apple'ın kendi CDN'inden
+  1200 × 1200 şeffaf arka planlı **14 renk görseli** indirildi (Series 11 42/46,
+  SE 3 40/44, Series 10 46 alüminyum, Series 9 41).
+- Add: `scripts/catalog-audit.mjs` — katalog sağlık raporu (eksik dosya, düşük
+  çözünürlük, tek görsel, zayıf açıklama, varyant/renk dökümü).
+- Not: Samsung'un renk görselleri ada uymayan renkler döndürdüğü için
+  **kullanılmadı**; JBL (10 ürün) jbl.com otomatik isteklere kapalı olduğu için
+  bu turda doğrulanamadı — ayrıntı ve kalan iş listesi raporda.
+
+## 2026-08-16 (devam 3)
+
+### Ödeme sunucusu ürün varyantlarına (renk/beden) uyarlandı
+- Change: `scripts/sync-catalog.mjs` artık varyantları da yazıyor; `api/_lib/catalog.json`
+  yeni katalogdan yeniden üretildi (**54 ürün, 114 varyant**). Katalog eski 20 ürünlük
+  listeden kaldığı sürece yeni ürünlerin siparişi reddediliyordu.
+- Change: `api/_lib/orders.js` → `priceBasket()` sepet satırlarını artık **ürün id + sku**
+  ile ayrıştırıyor (`js/cart.js` → `cartLineKey` ile aynı mantık). Aynı ürünün iki farklı
+  rengi iki ayrı satır olarak fiyatlanıyor; daha önce "aynı ürün iki satırda" diye
+  reddediliyordu.
+- Change: sku doğrulaması eklendi — sku eksikse, sahteyse veya **başka bir ürünün**
+  sku'suysa sipariş reddediliyor.
+- Change: Renk/beden bilgisi istemciden değil **sunucudaki katalogdan** okunuyor; müşteri
+  yalnız hangi sku'yu seçtiğini bildiriyor (uydurulan renk metni yok sayılıyor).
+- Change: iyzico sepet kaleminin kimliği varyantlı üründe **sku**, adı ise
+  `Ürün (Renk · Beden)` biçiminde gönderiliyor — ödeme kaydı ile depodan çıkan ürün birebir
+  eşleşiyor. Sipariş kaydı, sipariş maili, profil siparişleri ve ödeme sonucu sayfası da
+  varyantı gösteriyor.
+- Change: `js/payment.js` → `cartForServer()` artık `{id, sku, qty}` gönderiyor.
+- Add: Testler yeni katalog ve varyant kurallarına göre genişletildi; fiyat/sku sabitleri
+  katalogdan okunuyor, böylece katalog değişince testler kendiliğinden uyum sağlıyor.
+  `npm run test:payment` → **43 birim + 38 akış testi** (hız sınırı testi dahil).
+
+## 2026-08-16 (devam 2)
+
+### Gerçek iyzico entegrasyonu (Checkout Form) + canlı öncesi denetim düzeltmeleri
+
+`docs/deep-research-report.md` içindeki denetim promptu proje üzerinde uygulandı;
+çıkan CRITICAL bulgular kapatıldı. Denetim sonucu: `docs/IYZICO-DENETIM-RAPORU.md`.
+
+**Kaldırılanlar (CRITICAL)**
+- Remove: `js/payment.js` içindeki **sahte ödeme simülasyonu**. `simulatePaymentResult()`
+  kart numarasına bakıp 1,5 sn sonra "başarılı" dönüyordu ve **tanınmayan her kart başarılı
+  sayılıyordu** (`testCards[cleanNumber] || 'success'`) — yani hiç para tahsil edilmeden
+  sipariş "Hazırlanıyor" olarak oluşuyor, müşteriye "ödeme alındı" deniyordu.
+- Remove: `odeme.html` kart formu (kart no, son kullanma, **CVV**, kart sahibi) ve kart
+  önizleme bileşeni. Kart verisi artık bu sitede hiç toplanmıyor; PAN/CVV yalnız iyzico'nun
+  kendi ödeme sayfasına giriliyor (PCI kapsamı dışında kalmak için).
+- Remove: Canlı checkout sayfasında gösterilen **test kartı listesi** (`showTestCards()`).
+- Remove: `css/pages.css` içindeki kart input stilleri; `vercel.json` CSP `connect-src`
+  listesinden iyzico host'ları (tarayıcı artık gateway'e doğrudan konuşamaz).
+
+**Eklenenler — sunucu tarafı ödeme (Vercel Functions)**
+- Add: `api/payment/config.js` — kart ödemesinin açık olup olmadığını bildirir.
+  Yapılandırma eksikse checkout kart sekmesini kapatır, EFT/havaleye düşer.
+- Add: `api/payment/initialize.js` — sepeti **sunucu fiyatlarıyla** yeniden hesaplar,
+  siparişi `awaiting_payment` olarak açar, iyzico Checkout Form'u başlatır ve ödeme
+  sayfasına yönlendirir. İstemciden yalnız `{id, qty}` kabul edilir; gönderilen
+  fiyat/tutar alanları yok sayılır.
+- Add: `api/payment/callback.js` — tarayıcı dönüşü. Callback'teki hiçbir parametre kanıt
+  sayılmaz; sonuç iyzico retrieve ile sorgulanır, yanıt imzası + `conversationId` + tutar
+  + fraud durumu doğrulanır. Uyuşmazlıkta sipariş `pending_review` olur, sevkiyat başlamaz.
+- Add: `api/payment/webhook.js` — `X-IYZ-SIGNATURE-V3` doğrulaması (V1/V2 desteklenmiyor).
+  Kullanıcı sekmeyi kapatsa bile sipariş doğru sonuçlanır; tekrar gelen olaylar tek sonuç üretir.
+- Add: `api/order/eft.js`, `api/order/status.js` — sunucu tarafı EFT siparişi ve
+  siparişe özel HMAC jetonuyla korunan durum sorgusu (IDOR koruması).
+- Add: `api/_lib/` — `iyzico.js` (bağımlılıksız IYZWSv2 imzalama, endpoint'ler, yanıt imzası),
+  `settle.js` (callback + webhook ortak, idempotent sonuçlandırma), `store.js` (Firebase Admin),
+  `orders.js` (fiyatlama/doğrulama/kimlikler), `env.js`, `http.js`, `merchant.js`, `catalog.json`.
+- Add: `odeme-sonuc.html` — ödeme sonucu sayfası. "Başarılı" bilgisi tarayıcıda üretilmez,
+  `/api/order/status` üzerinden sunucudan okunur.
+- Add: `package.json`, `.env.example`, `scripts/sync-catalog.mjs` (js/data.js → sunucu fiyat
+  kataloğu), `scripts/test-payment-lib.mjs` (34 birim testi: imza, fiyat manipülasyonu,
+  webhook doğrulama, erişim jetonu).
+- Change: `dev-server.js` artık `/api/*` isteklerini Vercel Functions imzasıyla çalıştırıyor
+  ve `.env.local` yüklüyor; ödeme akışı yerelde test edilebiliyor.
+
+**Mevzuat**
+- Add: `on-bilgilendirme-formu.html` — Mesafeli Sözleşmeler Yönetmeliği'nin aradığı ön
+  bilgilendirme (satıcı künyesi, KDV dahil toplam, ödeme/teslimat, cayma hakkı ve
+  istisnaları, şikâyet yolları). Tüm sayfaların footer'ına ve `sitemap.xml`'e eklendi.
+- Add: `odeme.html` — sipariş onayından hemen önce satıcı + ödenecek tutar + **"Bu sipariş
+  ödeme yükümlülüğü doğurur"** bloğu; onay kutusu ön bilgilendirme formuna da atıf yapıyor;
+  onay kaydı (zaman damgası + IP) siparişle birlikte saklanıyor. Buton metni "Ödemeyi Tamamla".
+
+**Güvenlik**
+- Change: `firestore.rules` — yeni `orders` koleksiyonu yalnız sunucudan yazılabilir, üye
+  yalnız kendi siparişini okur; `paymentEvents` istemciye tamamen kapalı. `users/{uid}.orders`
+  yazma izni, sunucu API'si yapılandırılana kadar EFT yedeği için bilinçli olarak açık
+  bırakıldı (bulgu F-06, kapatma kuralı dosyada yorumlu).
+- Change: `.gitignore` — `node_modules/`, `.env*`, service account JSON'ları; `.vercelignore`
+  — `scripts/`, `.env*`, Firebase yapılandırmaları.
+- Add: `js/auth.js` → `getIdToken()`; sipariş API'sine üyelik kanıtı Firebase ID token ile
+  gönderiliyor ve sunucuda Admin SDK ile doğrulanıyor.
+
+**Dokümantasyon**
+- Add: `docs/IYZICO-DENETIM-RAPORU.md` (bulgular, test matrisi, PCI veri akışı, rollback,
+  mutabakat, nihai kararlar), `docs/IYZICO-ENTEGRASYON.md` (kurulum, sandbox kabul testleri,
+  production geçiş, işletim, sık hatalar).
+
+## 2026-08-16 (devam)
+
+### Renk / beden varyantları — müşteri sepete eklerken seçiyor
+- Add: `js/data.js` → her ürüne `variants: [{ sku, color, size? }]` eklendi. Excel'deki
+  **114 satırın her biri bir varyant**; SKU listedeki Malzeme kodudur. Daha önce renkler
+  sadece `specs` içinde metin olarak yazıyordu, seçilemiyordu. Doğrulandı: 114 Excel satırı
+  ↔ 114 varyant, birebir eşleşiyor, tekrar eden SKU yok. Apple Watch ürünlerinde ayrıca
+  kordon bedeni (`size`: S/M, M/L) var; `sizeLabel` ile etiketleniyor.
+- Add: `js/data.js` → varyant yardımcıları (`getVariantColors`, `getSizesForColor`,
+  `findVariant`, `hasVariantChoice`, `defaultVariant`) ve `COLOR_SWATCHES` renk paleti.
+- Add: `urun-detay.html` → renk ve beden seçici (`buildVariantPicker`). **Her renk × beden
+  kombinasyonu mevcut değil** (ör. Watch Series 11 42mm Jet Siyah yalnızca S/M) — seçili
+  renkte üretilmeyen beden pasif ve üstü çizili gösteriliyor, altında "Jet Siyah rengi
+  yalnızca S/M bedeninde mevcut." açıklaması çıkıyor. Olmayan kombinasyon sepete eklenemiyor.
+- Change: `js/cart.js` → sepet satırları artık ürün id'si yerine **varyant SKU'su** ile
+  ayrışıyor (`cartLineKey`). Aynı ürünün farklı rengi ayrı satır; aynı varyant tekrar
+  eklenince miktar artıyor. `addToCart(id, qty, variant)`; seçim gerektiren üründe varyant
+  verilmezse ekleme reddediliyor. `removeFromCart`/`updateCartQty` artık satır anahtarı alıyor.
+- Change: Seçilen renk/beden sepet kartında (renk noktası + metin), ödeme özetinde, sipariş
+  geçmişinde (`profil.html`) ve admin sipariş detayında (Malzeme kodu ile birlikte) görünüyor.
+- Change: `js/products.js` → çok seçenekli ürünlerin kartındaki buton "Sepete Ekle" yerine
+  **"Seçenekleri Gör"** (renk seçmeden sepete eklenemez); kartlarda renk noktaları gösteriliyor.
+  Tek varyantlı 24 üründe buton eskisi gibi doğrudan ekliyor.
+
+## 2026-08-16
+
+### Gerçek stok kataloğu (54 ürün), yeni kategoriler, ürün görselleri
+- Change: `js/data.js` → `BASE_PRODUCTS` tamamen değiştirildi. Kaynak: `stok bilgisi.xlsx`
+  (114 satır). Satırların çoğu aynı modelin renk çeşidi olduğu için **marka + model + fiyat**
+  kırılımıyla gruplandı → **54 ürün**. Renkler ürün başına tek satırda (`specs` → "Renk")
+  listeleniyor. Her üründe `sku` alanı var (listedeki Malzeme kodu), stok tümünde 10.
+  Önceki 20 demo ürün (iPad, Casper tablet, Anker/Sony vb.) kaldırıldı — stokta olmayan
+  ürünün sitede satılıyor görünmemesi için.
+- Change: Kategori yapısı `saat / kulaklik / tablet` → **`saat` (22) · `kulaklik` (21) ·
+  `aksesuar` (7) · `ses` (4)**. Stok listesinde hiç tablet yok; buna karşılık şarj adaptörü,
+  şarj kablosu, telefon askısı (→ Aksesuarlar) ve Bluetooth hoparlör, WiFi mesh, projektör
+  (→ Ses & Diğer) var. Navbar dropdown, mobil menü, footer, `urunler.html` filtreleri ve
+  hızlı kategori butonları, `index.html` kategori kartları, `admin.html` istatistik/seçim
+  alanları güncellendi.
+- Add: `js/data.js` → `CATEGORY_LABELS` tek kaynak olarak eklendi. `urunler.html` breadcrumb'ı,
+  `urun-detay.html` kategori linki ve `admin.html` ürün kaydetme akışı artık kendi kopya
+  kategori haritalarını tutmuyor, buradan besleniyor. Yeni kategori eklerken tek yer değişiyor
+  (navbar/footer linkleri hâlâ HTML içinde sabit).
+- Add: Ürün görselleri internetten indirildi — toplam **153 görsel** (48 üründe 3'er,
+  6 üründe 1–2 tane; `assets/images/products/`). Kaynak seçimi önce markanın resmi sitesiyle
+  (`site:apple.com`, `site:samsung.com` …) kısıtlanıyor, ardından aday URL'nin **model kodunu
+  içermesi zorunlu** tutuluyor (`fetch-images.ps1` → `Test-Relevant`); ayrıca üst model
+  görselinin alt modele girmemesi için negatif eşleşme (ör. "buds4" ararken "buds4pro" hariç),
+  stok fotoğraf/konsept-render siteleri, 500px altı görseller ve 16:9'dan geniş reklam
+  banner'ları eleniyor.
+  Bu filtreler şart: filtresiz denemede görsel arama AirPods 4 yerine AirPods Pro,
+  Samsung üçlü adaptör yerine alakasız bir stok fotoğraf, Galaxy Watch9 yerine Watch8 ve
+  JBL Tune 680BT NC yerine 530BT getirdi. **Yanlış görsel yerine eksik görsel** tercih edildi:
+  2026 modeli olduğu için resmi görseli az olan 6 üründe (Galaxy Watch9 40/44mm, Redmi Watch 6,
+  Redmi Buds 8, JBL Tune 680BT NC, JBL Go 5) 3 yerine 1–2 görsel var.
+- Remove: Katalogdan çıkan 20 demo ürünün 100 görseli silindi (13.2 MB).
+- Change: Ürünlerin `rating`/`reviewCount` değerleri 0. Gerçek müşteri değerlendirmesi
+  olmadan yıldız/yorum sayısı göstermek yanıltıcı olduğu için ürün kartında ve detay
+  sayfasında puan bloğu yerine "Henüz değerlendirilmedi" yazıyor (`js/products.js`,
+  `urun-detay.html`); `urunler.html` içindeki "Minimum Puan" filtresi ve "En Çok Beğenilen"
+  sıralaması hiç değerlendirme yokken otomatik gizleniyor. `js/main.js` ürün schema'sı zaten
+  `reviewCount > 0` koşuluyla `aggregateRating` yayınlıyordu, o davranış korundu.
+- Change: `urunler.html` sol filtredeki kategori sayaçları ("Tümü (20)" gibi) HTML'de sabit
+  yazılıydı, katalog değişince yanlış oluyordu; artık `PRODUCTS`'tan hesaplanıyor.
+- Change: `index.html` öne çıkanlar şeridi ilk 8 ürünle sınırlandı (21 "featured" ürün
+  şeridi şişiriyordu). `.categories-grid` 3 → 4 sütun.
+- Change: Meta açıklamalar, sayfa başlıkları ve footer metinleri gerçek katalogla uyumlandı
+  (artık satılmayan "tablet" ve "Sony/Anker" ifadeleri kaldırıldı; `js/site-config.js` →
+  `brand.description` dahil).
+- Add: `.claude/launch.json` — `node dev-server.js` (port 3000) preview yapılandırması.
 
 ## 2026-08-15 (devam 2)
 

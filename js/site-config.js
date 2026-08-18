@@ -16,11 +16,11 @@ const SITE = {
     domain:      'efemiletisim.com',
     url:         'https://efemiletisim.com',
     tagline:     'Teknoloji aksesuarlarında güvenilir adres',
-    description: 'Apple, Samsung, Huawei, JBL ve Anker akıllı saat, kulaklık ve tablet ürünleri. Orijinal, garantili, ücretsiz kargo.',
+    description: 'Apple, Samsung, Huawei, JBL ve Xiaomi akıllı saat, kulaklık ve teknoloji aksesuarları. Orijinal, garantili, ücretsiz kargo.',
     foundedYear: 2015
   },
 
-  /* ─── Yasal künye (Mesafeli Satış Sözleşmesi ve iyzico başvurusu için zorunlu) ─── */
+  /* ─── Yasal künye (Mesafeli Satış Sözleşmesi ve PayTR başvurusu için zorunlu) ─── */
   legal: {
     tradeName:      'EFEM İLETİŞİM SİNEMA VE TELEVİZYON PROGRAMCILIĞI PRODÜKSİYON ELEKTRONİK BİLİŞİM TİCARET LTD. ŞTİ.',
     tradeNameTodo:  false,
@@ -35,10 +35,10 @@ const SITE = {
 
   /* ─── İletişim ─── */
   contact: {
-    phone:        '0543 440 25 25',
+    phone:        '0542 840 08 88',
     phoneTodo:    false,
-    phoneHref:    '+905434402525',
-    email:        'info@efemiletisim.com',
+    phoneHref:    '+905428400888',
+    email:        'destek@efemiletisim.com',
     address: {
       line1:    'Yeni Mahalle 87071 Sokak No:5 Z32',
       line2:    'M1 Avm',
@@ -57,7 +57,7 @@ const SITE = {
 
   /* ─── Sosyal medya & mesajlaşma ─── */
   social: {
-    whatsapp:        '905434402525',
+    whatsapp:        '905428400888',
     whatsappTodo:    false,
     whatsappMessage: 'Merhaba, efemiletisim.com üzerinden yazıyorum.',
     instagram:       'efemelektronik',

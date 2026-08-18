@@ -652,6 +652,27 @@
 .stars { color: var(--accent); letter-spacing: -1px; }
 .rating-count { color: var(--text-muted); }
 
+/* Kartta renk seçenekleri */
+.product-swatches {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: var(--space-2);
+}
+
+.product-swatch {
+  width: 13px; height: 13px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.product-swatch-more {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
 /* Fiyat */
 .product-price-row {
   display: flex;
@@ -804,7 +825,8 @@
 }
 .category-bg-fallback.saat     { background: linear-gradient(135deg,#1e3a8a,#2563eb); }
 .category-bg-fallback.kulaklik { background: linear-gradient(135deg,#1e1b4b,#4338ca); }
-.category-bg-fallback.tablet   { background: linear-gradient(135deg,#0c4a6e,#0284c7); }
+.category-bg-fallback.aksesuar { background: linear-gradient(135deg,#0c4a6e,#0284c7); }
+.category-bg-fallback.ses      { background: linear-gradient(135deg,#134e4a,#0d9488); }
 .category-bg-fallback .icon {
   width: 40%;
   height: 40%;
@@ -1030,7 +1052,7 @@ footer {
 
 .payment-icon.mark-visa       { font-style: italic; font-weight: 800; letter-spacing: -0.02em; color: #1434CB; }
 .payment-icon.mark-troy       { font-weight: 800; letter-spacing: -0.01em; color: #00A651; text-transform: lowercase; }
-.payment-icon.mark-iyzico     { font-weight: 700; letter-spacing: -0.01em; color: #5D3EBC; text-transform: lowercase; }
+.payment-icon.mark-paytr      { font-weight: 800; letter-spacing: -0.01em; color: #1B3C87; }
 .payment-icon.mark-ssl        { color: rgba(15,23,42,0.7); font-weight: 600; }
 .payment-icon.mark-ssl .icon  { width: 13px; height: 13px; color: var(--success); }
 

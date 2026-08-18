@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <script src="js/theme-init.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Güvenli Ödeme – efemiletisim.com</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/logos/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="assets/logos/favicon-512.png">
+  <link rel="apple-touch-icon" href="assets/logos/favicon-180.png">
+  <meta name="description" content="PayTR güvenli ödeme formu.">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+  <link rel="stylesheet" href="css/odeme-guvenli.css">
+</head>
+<body>
+
+<nav id="navbar">
+  <div class="container">
+    <div class="navbar-inner">
+      <a href="index.html" class="navbar-logo">
+        <div class="logo-icon"><img src="assets/logos/icon-square.png" alt="Efem İletişim" loading="eager"></div>
+        <div class="logo-text">
+          <span class="logo-name">efem</span>
+          <span class="logo-sub">iletişim</span>
+        </div>
+      </a>
+      <div class="secure-navbar-right">
+        <span class="secure-navbar-badge">
+          <svg class="icon" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Güvenli Ödeme
+        </span>
+        <a href="sepet.html" class="btn btn-ghost btn-sm">← Sepete Dön</a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <div class="secure-wrap">
+    <div class="secure-head">
+      <h1>Ödeme bilgilerinizi girin</h1>
+      <p>Kart bilgileriniz doğrudan <strong>PayTR</strong>'ye iletilir; efemiletisim.com bu bilgileri görmez ve saklamaz.</p>
+    </div>
+
+    <div class="secure-summary" id="secure-summary" hidden>
+      <span class="label">Sipariş No <strong id="summary-order"></strong></span>
+      <span class="value" id="summary-total"></span>
+    </div>
+
+    <div class="paytr-frame-wrap" id="frame-wrap">
+      <div class="secure-error" id="frame-error" hidden>
+        <p class="secure-error-title">Ödeme formu açılamadı.</p>
+        <p class="secure-error-text">
+          Ödeme oturumunuz bulunamadı veya süresi dolmuş olabilir. Kartınızdan herhangi bir çekim yapılmadı.
+        </p>
+        <a href="odeme.html" class="btn btn-primary">Ödeme adımına dön</a>
+      </div>
+    </div>
+
+    <p class="secure-note">
+      Ödeme sonucunuz PayTR tarafından doğrudan sunucumuza bildirilir; siparişiniz yalnızca bu doğrulanmış
+      bildirime göre kesinleşir. İşlem bittiğinde otomatik olarak sipariş sonucu sayfasına yönlendirilirsiniz.
+    </p>
+  </div>
+</main>
+
+<div id="toast-container"></div>
+
+<script src="js/site-config.js"></script>
+<script src="js/data.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/payment.js"></script>
+<script src="js/main.js"></script>
+<script src="https://www.paytr.com/js/iframeResizer.min.js"></script>
+<script src="js/odeme-guvenli.js"></script>
+</body>
+</html>

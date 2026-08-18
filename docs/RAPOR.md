@@ -57,7 +57,14 @@ Bunlardan biri eksikse mail gönderilmeye devam etmez.
 
 ## 2. Ürün görselleri ve teknik özellikler
 
-### 2.1 Bulduğum önemli sorun
+> **2026-08-16 güncellemesi — bu bölüm artık geçerli değil.**
+> Katalog, gerçek stok listesiyle (`stok bilgisi.xlsx`) baştan kuruldu: 20 demo ürün
+> kaldırıldı, yerine **54 gerçek ürün** geldi; kategoriler `saat / kulaklik / aksesuar / ses`
+> oldu. Görseller yeni bir hatla indirildi (marka resmi sitesiyle kısıtlı arama + zorunlu
+> model kodu eşleşmesi). Güncel durum ve sınırlar için `CHANGELOG.md` → "2026-08-16"
+> kaydına bakın. Aşağıdaki 2.1–2.2 yalnızca geçmiş kaydı olarak duruyor.
+
+### 2.1 Bulduğum önemli sorun (eski katalog)
 
 Katalogdaki 20 ürünün çoğu **2023 modeli** (Apple Watch Series 9, iPad 10. Nesil, iPad Mini 6, Galaxy Buds3 Pro, Galaxy Watch6...). 2026'da bu modellerin çoğu markaların resmi sitelerinden kaldırılmış durumda.
 
@@ -94,9 +101,9 @@ Görsel kaynaklarını çekerken ürün adlarının/fiyatların **değişmediği
 - ✅ "Bize Ulaşın" kartı eklendi: telefon, WhatsApp, Instagram butonları — hepsi `site-config.js`'ten besleniyor
 - ✅ Şirket Bilgileri kartı artık `site-config.js`'ten geliyor (Ticaret Unvanı/Sicil/Mersis/Vergi No/Adres)
 - ⏳ Ticaret Unvanı hâlâ kısaltılmış ("Efem İletişim") — tam unvan verilmedi, `js/site-config.js` içindeki `legal.tradeName` alanı hâlâ TODO
-- ⏳ Telefon numarası hâlâ eski (0543 440 25 25) — yeni numara verilmedi
-- ⏳ WhatsApp numarası hâlâ telefon numarasıyla aynı placeholder — gerçek WhatsApp iş numarası verilmedi
-- ⏳ Instagram kullanıcı adı varsayım (`efemiletisim`) — doğrulanmadı
+- ✅ Telefon numarası güncellendi: **0542 840 08 88** (17 Ağustos 2026). `js/site-config.js` ve `api/_lib/merchant.js` birlikte değişti
+- ✅ WhatsApp da aynı numaraya taşındı (`social.whatsapp: 905428400888`) — işletme sahibi onayıyla
+- ✅ Instagram kullanıcı adı doğrulandı: `efemelektronik` (hesap açık, 85 takipçi)
 
 **`js/site-config.js` içinde hâlâ TODO işaretli alanlar** (bunlar doldurulmadan doğru görünmeye devam edecek ama içerik yanlış/varsayımsal):
 ```js

@@ -1,18 +1,23 @@
 {
-  "name": "efemiletisim-com",
+  "name": "efemiletisim",
   "version": "1.0.0",
   "private": true,
-  "description": "efemiletisim.com — statik e-ticaret sitesi + iyzico ödeme backend'i (Vercel Functions)",
+  "description": "efemiletisim.com — statik vitrin + PayTR iFrame ödeme API'si ve yönetim uçları (Vercel Functions)",
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "scripts": {
-    "dev": "node dev-server.js",
-    "set-admin-claim": "node scripts/set-admin-claim.js",
-    "seed-products": "node scripts/seed-products.js"
+    "sync-catalog": "node scripts/sync-catalog.mjs",
+    "check-catalog": "node scripts/sync-catalog.mjs --check",
+    "test:payment": "node scripts/test-payment-lib.mjs && node scripts/test-payment-flow.mjs",
+    "test:payment:lib": "node scripts/test-payment-lib.mjs",
+    "test:payment:flow": "node scripts/test-payment-flow.mjs",
+    "test:admin": "node scripts/test-admin-orders.mjs && node scripts/test-admin-catalog.mjs",
+    "test:admin:orders": "node scripts/test-admin-orders.mjs",
+    "test:admin:catalog": "node scripts/test-admin-catalog.mjs",
+    "test": "npm run test:payment && npm run test:admin"
   },
   "dependencies": {
-    "firebase-admin": "^12.6.0",
-    "iyzipay": "^2.0.55"
+    "firebase-admin": "^12.7.0"
   }
 }
