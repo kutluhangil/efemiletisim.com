@@ -162,7 +162,7 @@ function renderProductGrid(products, containerId) {
   if (products.length === 0) {
     container.innerHTML = `
       <div class="empty-state" style="grid-column:1/-1">
-        <div class="icon"><svg class="icon" viewBox="0 0 24 24" style="width:3rem;height:3rem"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg></div>
+        <img class="empty-illustration" src="assets/images/empty-search.webp" alt="Sonuç bulunamadı çizimi" width="160" height="160" loading="lazy" onerror="this.remove()">
         <h3>Ürün bulunamadı</h3>
         <p>Farklı filtreler deneyebilirsiniz.</p>
       </div>`;

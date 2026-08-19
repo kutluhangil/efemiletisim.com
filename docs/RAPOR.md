@@ -2,7 +2,7 @@
 
 Tarih: 2026-08-14
 Kapsam: Auth/mail sistemi, kritik bug'lar, ürün görselleri, kupon temizliği, tasarım yükseltmesi.
-Henüz kapsanmadı: yasal metinler, admin panel yeniden yazımı, iyzico backend entegrasyonu, mobil app (bkz. bölüm 8 — Faz 4-7).
+Henüz kapsanmadı: yasal metinler, admin panel yeniden yazımı, ödeme backend entegrasyonu, mobil app (bkz. bölüm 8 — Faz 4-7).
 
 **Güncelleme (devam 3):** Faz 3 tamamlandı. `urunler.html`, `urun-detay.html`, `sepet.html`, `odeme.html`,
 `profil.html`, `admin.html` sayfalarının tümü aynı tasarım diline (pill buton, spring hareket, double-bezel
@@ -25,7 +25,7 @@ edildi (bkz. CHANGELOG "devam 3"). Detaylar için bölüm 7 ve 9'a bakın.
 | 3 | `main.js` her sayfada `initSearch()` çağırıyordu | Arama kutusu olmayan sayfalarda (`hesap.html`) tüm `DOMContentLoaded` zinciri kopuyordu | Arama kutusu varlığı kontrol edilip koşullu çağrılıyor |
 | 4 | İki paralel oturum sistemi: `js/auth.js` (localStorage) + Firebase | Giriş yapınca navbar güncellenmiyor, sipariş kaydı tutarsız | Tek Firebase tabanlı ES module'de birleştirildi |
 | 5 | `hakkimizda.html` tanımsız CSS değişkenleri kullanıyordu (`--bg-alt`, `--bg-body`) | Sayfanın bir kısmı transparan/varsayılan renk basıyordu | Tanımlı karşılıklarıyla değiştirildi |
-| 6 | Admin panel şifresi client-side hardcoded (`admin` / `efemi2024`) | Herkes `admin.html` kaynağını görüp giriş yapabilir | **Faz 5'te** backend'e taşınacak, şimdilik değişmedi — aşağıda not var |
+| 6 | Admin panel şifresi client-side hardcoded (`admin` / `efemi2024`) | Herkes `admin.html` kaynağını görüp giriş yapabilir | **Çözüldü (2026-08-15):** Firebase Authentication + "admin" custom claim'e taşındı, bkz. `CHANGELOG.md` |
 
 ### 1.2 "Şifremi unuttum çalışmıyor, doğrulama maili ulaşmıyor" — kök neden
 
@@ -118,7 +118,7 @@ social.instagram      // Instagram kullanıcı adı (varsayım: efemiletisim)
 
 ---
 
-## 4. Gemini/Müşteri/iyzico raporlarındaki maddeler — durum özeti
+## 4. Gemini/Müşteri/ödeme sağlayıcı raporlarındaki maddeler — durum özeti
 
 | Kaynak | Madde | Durum |
 |---|---|---|
@@ -133,13 +133,13 @@ social.instagram      // Instagram kullanıcı adı (varsayım: efemiletisim)
 | Müşteri gözü | Sosyal kanıt / yorum bölümü yok | ⏳ Faz 3 |
 | Müşteri gözü | FOMO / stok uyarısı / geri sayım yok | ⏳ Faz 3 (öneri olarak — agresif satış taktikleri isteğe bağlı) |
 | Müşteri gözü | Hızlı önizleme / quick view yok | ⏳ Faz 3 |
-| iyzico | Mesafeli Satış Sözleşmesi, İptal/İade, Gizlilik/KVKK metinleri yok | ⏳ Faz 4 — tam taslak yazılacak (karar: "tam taslak, şirket bilgisi placeholder") |
-| iyzico | Checkbox onayı (sözleşme okundu) yok | ⏳ Faz 4 |
-| iyzico | Replika şüphesi — marka isimleri direkt kullanılıyor | 📝 Not: ürünler "uyumlu aksesuar" değil, gerçek marka ürünleri gibi satılıyor. Eğer siz gerçek distribütörseniz (Datagate/İndeks vb. partner listesine bakılırsa öyle görünüyor) sorun yok; iyzico başvurusunda distribütör faturası istenebilir. |
-| iyzico | Şirket künyesi (VKN/Ünvan) yetersiz | ⏳ Faz 4 — `site-config.js` üzerinden doldurulacak |
-| iyzico | Backend olmadan Secret Key güvenliği | ⏳ Faz 5 — Vercel Functions ile |
-| iyzico | KDV Dahil ibaresi yok | ⏳ Faz 4 |
-| iyzico | Sepet fiyat kırılımı (indirim/kargo/toplam) | ✅ Zaten sepette var (Ara Toplam/Kargo/Toplam ayrı gösteriliyor) |
+| Ödeme sağlayıcı | Mesafeli Satış Sözleşmesi, İptal/İade, Gizlilik/KVKK metinleri yok | ⏳ Faz 4 — tam taslak yazılacak (karar: "tam taslak, şirket bilgisi placeholder") |
+| Ödeme sağlayıcı | Checkbox onayı (sözleşme okundu) yok | ⏳ Faz 4 |
+| Ödeme sağlayıcı | Replika şüphesi — marka isimleri direkt kullanılıyor | 📝 Not: ürünler "uyumlu aksesuar" değil, gerçek marka ürünleri gibi satılıyor. Eğer siz gerçek distribütörseniz (Datagate/İndeks vb. partner listesine bakılırsa öyle görünüyor) sorun yok; üye işyeri başvurusunda distribütör faturası istenebilir. |
+| Ödeme sağlayıcı | Şirket künyesi (VKN/Ünvan) yetersiz | ⏳ Faz 4 — `site-config.js` üzerinden doldurulacak |
+| Ödeme sağlayıcı | Backend olmadan Secret Key güvenliği | ⏳ Faz 5 — Vercel Functions ile |
+| Ödeme sağlayıcı | KDV Dahil ibaresi yok | ⏳ Faz 4 |
+| Ödeme sağlayıcı | Sepet fiyat kırılımı (indirim/kargo/toplam) | ✅ Zaten sepette var (Ara Toplam/Kargo/Toplam ayrı gösteriliyor) |
 
 ---
 
@@ -166,7 +166,7 @@ social.instagram      // Instagram kullanıcı adı (varsayım: efemiletisim)
 ## 6. Geliştirme önerileri (öncelik sırasıyla)
 
 1. **Firebase Console ayarları** — hiçbir kod değişikliği bunu çözemez, önce bu kontrol edilmeli (bkz. 1.2)
-2. **Yasal metinler + iyzico başvurusu** — ödeme almadan önce şart, Faz 4
+2. **Yasal metinler + üye işyeri başvurusu** — ödeme almadan önce şart, Faz 4
 3. **Admin panelini gerçek backend'e taşımak** — şu anki hal "demo" seviyesinde, gerçek işletme için yetersiz
 4. **SEO temelleri** (meta/OG/schema) — tam SSR'a geçmeden de düşük maliyetle büyük SEO kazancı sağlar
 5. **Huawei/JBL görselleri** — arkadaşın tarayıcıdan manuel indirip admin panel geldiğinde yüklemesi en hızlı yol
@@ -212,14 +212,14 @@ Faz 3 (tasarım yükseltmesi) ve **Faz 4 (SEO, güvenlik header, yasal metinler,
 `mesafeli-satis-sozlesmesi.html`, `iptal-iade.html`) + checkout onay checkbox'ı, KDV Dahil
 ibaresi.
 
-**Faz 5 (Backend/iyzico/admin auth), Faz 6 (admin panel Firestore+Storage) ve Faz 7 (mobil app)
-bu oturumda YAPILMADI** — bunlar kullanıcının kendi Vercel/Firebase hesabına, kendi AI
-asistanıyla yapılacak (hesap erişimi + gerçek merchant/Firebase Console ayarları gerektiriyor).
-Bu üç fazın tamamı, doğrudan bir AI'ya yapıştırılabilir prompt'lar hâlinde
-**`ARKADAS-YAPILACAKLAR.md`** dosyasına yazıldı — oradan devam edilmeli. Mevcut Firebase
-entegrasyonu (`js/firebase-config.js`, `js/firebase-auth.js`, `firestore.rules`) bu oturumda
-incelendi, bilinen bir hata bulunmadı; sadece eksik özellikler var (admin auth yok, ürünler
-Firestore'da değil, misafir siparişleri hiçbir yere yazılmıyor, ödeme tamamen simülasyon).
+**Faz 5 (Backend/ödeme/admin auth) bu oturumda YAPILMADI, sonraki bir oturumda (2026-08-15)
+tamamlandı** — gerçek ödeme entegrasyonu (`api/`), admin panelinin Firebase Auth + "admin"
+custom claim'e taşınması ve sipariş yönetiminin Firestore `orders` koleksiyonuna geçirilmesi
+yapıldı, detaylar için `CHANGELOG.md`. **Faz 6 (admin panel ürün yönetimi Firestore+Storage) ve
+Faz 7 (mobil app) hâlâ YAPILMADI** — ürünler hâlâ `js/data.js` sabit dizisinde, admin panelden
+eklenen ürünler hâlâ `localStorage`'da. Bunlar kullanıcının kendi Vercel/Firebase hesabına,
+gerçek merchant/Firebase Console ayarları gerektiriyor; kalan adımlar
+**`ARKADAS-YAPILACAKLAR.md`** dosyasında güncel haliyle listeleniyor.
 
 ### Devam prompt'u (yeni konuşmada `/clear` sonrası yapıştır — sadece bu repo üzerinde
 kod/tasarım işi için; Vercel/Firebase hesabı gerektiren işler için `ARKADAS-YAPILACAKLAR.md`
@@ -231,7 +231,7 @@ Tamamlanan: Faz 0-4 (altyapı, auth/mail bug'ları, ürün görselleri, tasarım
 SEO/güvenlik header/yasal metinler/KDV). Detaylı rapor: RAPOR.md, CHANGELOG.md.
 Tasarım kararı proje CLAUDE.md'sinde kayıtlı: high-end-visual-design, ana mavi #2563EB.
 
-Faz 5-7 (backend/iyzico, admin panel Firestore+Storage, mobil app) kullanıcının kendi
+Faz 5-7 (backend/ödeme, admin panel Firestore+Storage, mobil app) kullanıcının kendi
 Vercel/Firebase hesabında, ARKADAS-YAPILACAKLAR.md dosyasındaki hazır prompt'larla
 yapılacak — bu repoda bu fazlara ait kod DEĞİŞİKLİĞİ YAPMA, sadece dosya zaten var.
 

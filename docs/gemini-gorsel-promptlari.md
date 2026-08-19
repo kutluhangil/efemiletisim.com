@@ -1,207 +1,288 @@
-# Gemini için Görsel Üretim Prompt'ları — efemiletisim.com
+# Gemini Görsel Üretim Prompt'ları — efemiletisim.com
 
-Amaç: siteye "sanatsal hava" katacak, çizim tarzı (line-art / ince kalem eskizi) minimalist görseller üretmek. Ürün fotoğraflarının yerine geçmiyor — bunlar dekoratif/atmosferik görseller: hero arka planı, kategori illüstrasyonları, boş durum (empty state) çizimleri, hakkımızda sayfası görselleri gibi yerlerde kullanılacak.
+Bu dosya, siteye eklenecek **dekoratif ve pazarlama görsellerinin** Gemini ile üretilmesi için hazır prompt'ları içerir. Ürün fotoğraflarının yerine geçmez — ürün görselleri her zaman üreticinin kendi CDN'inden gelir (bkz. `CLAUDE.md` → "Ürün görselleri" kuralı).
 
-Model: Gemini'nin görsel üretim modu (Nano Banana / Imagen). Her prompt'u olduğu gibi yapıştırıp üretebilirsin. Türkçe de anlıyor ama İngilizce prompt'lar bu modellerde daha tutarlı stil sonucu veriyor — bu yüzden prompt'lar İngilizce yazıldı.
+**Neden yeniden yazıldı:** Önceki sürüm krem zeminli, ince kalem çizimi (line-art) bir stil öneriyordu. Site bir **e-ticaret vitrini**; kategori kartlarında koyu gradyan overlay üstüne beyaz başlık binen, `border-radius: 28px`, hover'da `scale(1.08)` yapan fotoğraf kartları var. Çizim stili bu kartlarda soluk kalıyor ve ürünle ilgisi kurulamıyor. Yeni yön: **stüdyo ışığıyla çekilmiş gibi, premium, koyu zeminli ürün sahneleri.**
 
----
-
-## 1) Stil Sabiti (her prompt'un başına ekle)
-
-Tüm görsellerin AYNI seride hissettirmesi için, aşağıdaki "stil prefix"ini her prompt'un başına ekleyerek üret. Tutarlılık için mümkünse hepsini aynı Gemini konuşmasında art arda iste (model önceki görseli referans alarak stili daha kolay korur).
-
-```
-STYLE: Minimalist single-line continuous ink illustration, fine uniform line
-weight (like a technical pen sketch), on a warm cream/off-white paper texture
-background (#FAF7F0). No color fill except one restrained accent in cool blue
-(#2563EB) used sparingly — a single highlighted element per image, never more
-than 10% of the composition. No photorealism, no gradients, no drop shadows,
-no 3D rendering. Hand-drawn feel with slightly imperfect, organic linework —
-not vector-perfect, not clipart, not corporate flat-icon style. Generous
-negative space around the subject. Editorial, art-gallery quality, like a
-page from a designer's sketchbook.
-```
-
-**Negatif / kaçınılacaklar** (Gemini'ye ayrıca belirt istersen): *no text, no logos, no watermark, no photorealistic rendering, no gradient mesh, no glossy 3D, no emoji-style icons, no thick outlines, no busy background clutter.*
+Model: Gemini görsel üretimi (Nano Banana / Imagen). Prompt'lar İngilizce — bu modellerde stil tutarlılığı İngilizce'de belirgin şekilde daha iyi.
 
 ---
 
-## 2) Ana Sayfa — Hero Arka Plan İllüstrasyonu
+## 0) Site tasarım kimliği (prompt'ların dayandığı gerçekler)
 
-**Kullanım yeri:** `index.html` hero bölümü, `hero-bg-shapes` katmanının arkasında veya `hero-visual` yanında dekoratif katman olarak. Dosya: `assets/images/hero-sketch.png` (veya `.webp`).
+| Şey | Değer | Nereden |
+|---|---|---|
+| Ana renk | `#2563EB` | `css/main.css` → `--primary` |
+| Koyu kurumsal ton | `#0F172A` | `--secondary` |
+| Vurgu (amber) | `#F59E0B` | `--accent` |
+| Açık zemin | `#F8FAFC` / `#FFFFFF` | `--bg` / `--surface` |
+| Tipografi | Inter | `main.css` @import |
+| Kategori kartı | 4:3, 28px köşe, alttan `rgba(15,23,42,0.85)` gradyan overlay, hover'da mavi overlay | `css/components.css` → `.category-card` |
+| Karanlık mod | Var (`data-theme="dark"`) | `js/theme-init.js` |
 
-**Boyut:** 1600×1200px (4:3), transparan/kırpılabilir kenarlar.
+Bu iki sonucu doğurur ve tüm prompt'lara işlendi:
 
-```
-STYLE: Minimalist single-line continuous ink illustration, fine uniform line
-weight (like a technical pen sketch), on a warm cream/off-white paper texture
-background (#FAF7F0). No color fill except one restrained accent in cool blue
-(#2563EB) used sparingly — a single highlighted element per image, never more
-than 10% of the composition. No photorealism, no gradients, no drop shadows,
-no 3D rendering. Hand-drawn feel with slightly imperfect, organic linework —
-not vector-perfect, not clipart, not corporate flat-icon style. Generous
-negative space around the subject. Editorial, art-gallery quality, like a
-page from a designer's sketchbook.
-
-SUBJECT: A loose, artful arrangement of three tech objects floating in space —
-a smartwatch with visible watch face detail, an over-ear wireless headphone,
-and a slim tablet at a slight angle — connected by thin looping line-art
-ribbons/wires that flow between them like a single unbroken sketch stroke.
-Objects overlap slightly at different scales to create depth without shading.
-The smartwatch's screen circle is the one accented element, drawn in the
-blue accent color. Wide horizontal composition with empty space on the left
-third for text overlay. No hands, no people, no background scenery.
-```
+1. **Kategori/hero görsellerinde kompozisyonun alt üçte biri boş ve koyu kalmalı** — üstüne siyah gradyan + başlık biniyor.
+2. **Krem/beyaz zeminli görseller yasak** (boş durum ikonları hariç) — karanlık modda parlayan beyaz dikdörtgen gibi durur. Koyu zemin her iki temada da çalışır.
 
 ---
 
-## 3) Kategori İllüstrasyonları (3 adet)
+## 1) Stil sabiti — A ailesi: Kategori & Hero (fotografik)
 
-**Kullanım yeri:** `urunler.html` kategori kartları / `index.html` kategori bölümü — mevcut SVG ikonların yanına veya yerine büyük dekoratif üst görsel olarak. Dosyalar: `assets/images/category-saat.png`, `category-kulaklik.png`, `category-tablet.png`.
+Her kategori/hero prompt'unun **başına** olduğu gibi yapıştır.
 
-**Boyut:** 800×800px (1:1, kare).
-
-### 3a. Akıllı Saatler
 ```
-[STYLE prefix'i buraya ekle]
-
-SUBJECT: A single smartwatch drawn in continuous fine-line sketch style,
-three-quarter angle view, showing subtle strap texture with parallel hatch
-lines. The watch face circle is filled with the blue accent color as the
-one highlighted detail. Small motion/notification lines radiate softly from
-the top corner of the screen. Centered composition, generous cream negative
-space around it, like a single object study in a sketchbook.
-```
-
-### 3b. Kulaklıklar
-```
-[STYLE prefix'i buraya ekle]
-
-SUBJECT: A single over-ear wireless headphone drawn in continuous fine-line
-sketch style, floating at a slight tilt, headband arched gracefully. Soft
-looping line-art sound waves emanate from one ear cushion in the blue accent
-color as the single highlighted element. Centered composition, generous
-cream negative space, sketchbook object-study feel.
+STYLE: Premium e-commerce product photography, studio lighting, shot on a
+medium-format camera with an 85mm lens, shallow depth of field. Single hero
+product floating or resting on a seamless deep-navy gradient backdrop
+(#0F172A fading to #1E3A8A), lit with one large soft key light from the upper
+left and a cool rim light in electric blue (#2563EB) tracing the product's
+edge. Subtle blue reflection pooling under the product. Clean, expensive,
+minimal — like an Apple or Bang & Olufsen product page. Sharp, high detail on
+materials (brushed metal, matte plastic, glass, fabric weave). No text, no
+logos, no watermark, no people's faces, no busy props, no clutter.
+COMPOSITION: Product occupies the upper two thirds of the frame and is
+centred slightly high; the bottom third stays dark, empty and unbusy because
+a black gradient and white heading are overlaid there in the UI.
 ```
 
-### 3c. Tabletler
-```
-[STYLE prefix'i buraya ekle]
-
-SUBJECT: A single slim tablet drawn in continuous fine-line sketch style,
-standing propped at a slight angle like it's resting against an invisible
-surface. The screen area has a few thin geometric line details (like a
-sketched app grid) with one small accent-blue square highlighted among them.
-Centered composition, generous cream negative space, sketchbook object-study
-feel.
-```
+**Negatif liste** (Gemini ayrı bir alan sunuyorsa oraya):
+`text, letters, logos, watermark, brand names, hands, faces, white background, cream paper texture, clipart, flat vector icon, 3D toy render, plastic-looking CGI, harsh shadows, cluttered background, collage, multiple duplicate products`
 
 ---
 
-## 4) Hakkımızda Sayfası — Atmosfer Görseli
+## 2) Kategori Kartları (4 adet — zorunlu)
 
-**Kullanım yeri:** `hakkimizda.html`, hikaye/değerler bölümünün yanında geniş bir illüstrasyon. Dosya: `assets/images/hakkimizda-sketch.png`.
+**Kullanım yeri:** `index.html` "Ne Arıyorsunuz?" bölümü ve `urunler.html` kategori filtreleri.
+**Boyut:** 1600×1200 px (4:3). Karta `object-fit: cover` ile oturuyor.
+**Kayıt:** `assets/images/category-<slug>.webp` (yanına `.jpg` fallback bırak).
 
-**Boyut:** 1400×1000px.
+> Not: `saat` ve `kulaklik` kartlarında hâlâ eski çizim görseli var — bunlar da bu yeni prompt'larla **değiştirilecek**. `aksesuar` ve `ses` kartlarında görsel hiç yok, şu an gradyan + ikon fallback görünüyor.
 
+### 2a. Akıllı Saatler → `assets/images/category-saat.webp`
 ```
-[STYLE prefix'i buraya ekle]
+[1) A ailesi STYLE prefix'ini buraya yapıştır]
 
-SUBJECT: A cozy, small neighborhood electronics shopfront drawn in loose
-architectural sketch style — a storefront window with a few tech products
-displayed on a shelf inside, an awning, a half-open door. Line-art only, no
-color except a single blue accent on the shop's door handle or a small sign
-detail. Slightly whimsical, warm, human-scale — this represents a genuine
-local telecom/electronics store, not a big-box retailer. Wide composition
-with sky-level negative space above for text overlay.
+SUBJECT: Three modern smartwatches arranged in a tight diagonal cluster,
+floating at slightly different heights and angles — one shown face-on with a
+glowing dark watch face, one three-quarter turned showing the crown and side
+button, one from behind showing the sensor puck and a woven fabric strap.
+Mixed materials: brushed titanium case, matte aluminium case, soft silicone
+band. The face-on watch's display emits a faint electric blue (#2563EB) glow
+that catches the other two. Generic unbranded designs, no logos, no readable
+text on the screens — only abstract glowing arcs and rings.
+```
+
+### 2b. Kulaklıklar → `assets/images/category-kulaklik.webp`
+```
+[1) A ailesi STYLE prefix'ini buraya yapıştır]
+
+SUBJECT: One premium over-ear wireless headphone floating in three-quarter
+view, headband arched, ear cushions in matte black with a subtle leather
+grain, next to and slightly behind it a smaller open true-wireless earbud
+charging case with one earbud lifted out and hovering above it. Blue rim
+light traces the headband curve and the earbud stem. Soft, almost invisible
+ripples of light in the background suggesting sound waves — abstract, not
+literal graphics. Unbranded, no logos.
+```
+
+### 2c. Aksesuarlar → `assets/images/category-aksesuar.webp` (YENİ)
+```
+[1) A ailesi STYLE prefix'ini buraya yapıştır]
+
+SUBJECT: A neat floating arrangement of charging accessories — a compact
+white-and-grey USB-C wall charger with EU round pins (European plug, not US
+flat blades, not UK three-pin), a coiled braided USB-C cable forming a
+graceful loop in mid-air, and a slim power bank standing on edge behind them.
+A single blue LED dot glows on the power bank. Objects are spaced apart with
+clean air between them, not touching. Unbranded, no printed text on the
+charger body.
+```
+> **Önemli:** EU (yuvarlak iki uçlu) fiş şart — Türkiye'de satılan ürün bu. ABD/İngiltere fişi çıkarsa yeniden üret, aynı hata ürün görsellerinde de yasak (`CLAUDE.md`).
+
+### 2d. Ses & Diğer → `assets/images/category-ses.webp` (YENİ)
+```
+[1) A ailesi STYLE prefix'ini buraya yapıştır]
+
+SUBJECT: A cylindrical portable bluetooth speaker standing upright, wrapped
+in tightly woven acoustic mesh fabric with visible thread texture, a rubber
+carry strap looping off to one side, and a second smaller speaker lying on
+its side blurred in the background (bokeh). A ring of electric blue light
+glows around the base of the main speaker and spills onto the surface.
+Faint low-frequency air distortion around the driver. Unbranded, no logos,
+no text on the fabric.
 ```
 
 ---
 
-## 5) Boş Durum (Empty State) İllüstrasyonları — 3 adet
+## 3) Ana Sayfa Hero Görseli
 
-**Kullanım yeri:** `.empty-state .icon` alanının üstüne büyük illüstrasyon olarak (sepet boş, favoriler boş, sipariş yok — `sepet.html`, `profil.html`). Şu an bu alanlarda sade SVG ikon var; bu görseller onun yerini alacak/zenginleştirecek. Dosyalar: `assets/images/empty-cart.png`, `empty-favorites.png`, `empty-orders.png`.
+**Kullanım yeri:** `index.html:175` — şu an `assets/images/hero-banner.jpg`.
+**Boyut:** 2400×1600 px. Sağ tarafta ürünler, **sol üçte bir boş** (başlık + CTA oraya biniyor).
+**Kayıt:** `assets/images/hero-banner.webp` (+ `.jpg`).
 
-**Boyut:** 500×500px (1:1), transparan arka plan tercih edilir (PNG).
-
-### 5a. Boş Sepet
 ```
-[STYLE prefix'i buraya ekle]
+[1) A ailesi STYLE prefix'ini buraya yapıştır — ama COMPOSITION satırını
+aşağıdakiyle DEĞİŞTİR:]
 
-SUBJECT: A small line-art shopping basket/cart, empty, drawn with a gentle
-melancholic tilt (as if slightly sad but charming, not depressing) — maybe
-one single small dashed line floating above it like a lost item drifting
-away, in the blue accent color. Lots of empty cream space around it,
-small and centered, playful sketchbook doodle feel — not corporate icon.
-```
+COMPOSITION: Wide cinematic frame. The left 40% of the image is empty, deep
+navy negative space for a headline and buttons. All products sit in the right
+60%, arranged in a receding diagonal from bottom-right to upper-centre.
 
-### 5b. Boş Favoriler
-```
-[STYLE prefix'i buraya ekle]
-
-SUBJECT: A simple line-art heart outline, hollow/unfilled, drawn with a soft
-dashed or dotted stroke instead of a solid line to suggest "waiting to be
-filled" — one small solid blue accent spark or star drawn just outside the
-heart's outline as if inviting it. Small and centered, generous cream
-negative space, playful sketchbook doodle feel.
-```
-
-### 5c. Boş Sipariş Geçmişi
-```
-[STYLE prefix'i buraya ekle]
-
-SUBJECT: A small line-art shipping box, closed, sitting alone with a single
-looping dashed line-art path behind it suggesting a road/journey not yet
-taken — the box's tape line is the single blue accent detail. Small and
-centered, generous cream negative space, playful sketchbook doodle feel.
+SUBJECT: A curated hero arrangement of consumer tech — a smartwatch standing
+upright on a low invisible pedestal in the foreground (sharpest), an over-ear
+headphone resting at an angle behind it, a pair of true-wireless earbuds in
+an open case, and a small bluetooth speaker furthest back and softly out of
+focus. A broad electric blue (#2563EB) light gradient washes in from the
+right edge. Everything unbranded, no logos, no text.
 ```
 
 ---
 
-## 6) Ödeme Sayfası — Güven Atmosferi Görseli
+## 4) Kampanya / Güven Şeritleri (opsiyonel, geniş bantlar)
 
-**Kullanım yeri:** `odeme.html`, ödeme adımının yanında veya üstünde küçük bir dekoratif şerit görseli (isteğe bağlı — sayfa zaten metin/rozetlerle güven veriyor, bu tamamen dekoratif katman). Dosya: `assets/images/odeme-sketch.png`.
+**Boyut:** 2000×600 px. Bu görseller **arka plan** olarak kullanılır, üstlerine metin biner.
 
-**Boyut:** 1200×400px (geniş, kısa şerit).
-
+### 4a. Ücretsiz kargo şeridi → `assets/images/banner-kargo.webp`
 ```
-[STYLE prefix'i buraya ekle]
+[A ailesi STYLE prefix]
 
-SUBJECT: A minimal line-art padlock illustration, closed, drawn with a single
-continuous confident stroke, centered inside a very thin circular line-art
-badge/seal shape (like a wax-seal outline, not a solid badge). The padlock's
-keyhole is the single blue accent detail. Wide short composition with equal
-cream negative space on both sides, quiet and reassuring, sketchbook
-object-study feel — not a generic security icon, not a shield, not a lock
-clipart.
+SUBJECT: A minimal, elegant cardboard shipping box floating slightly
+off-centre to the right, its tape seam catching a thin electric blue light
+line, motion-blurred blue light streaks passing behind it left-to-right
+suggesting speed and delivery. Very wide, short banner composition with the
+left half nearly empty. No text, no shipping labels, no barcodes, no logos.
 ```
 
----
-
-## 7) 404 / Genel Hata Sayfası (varsa ileride eklenecek)
-
-**Kullanım yeri:** Şu an sitede özel bir 404 sayfası yok; ileride eklenirse kullanılabilir. Dosya: `assets/images/404-sketch.png`.
-
-**Boyut:** 900×700px.
-
+### 4b. Güvenli ödeme şeridi → `assets/images/banner-odeme.webp`
 ```
-[STYLE prefix'i buraya ekle]
+[A ailesi STYLE prefix]
 
-SUBJECT: A small line-art tablet or smartwatch character drawn with a
-puzzled expression suggested only through simple line marks (a squiggle
-where a screen would show a question mark), looking lost, standing on a
-single thin horizontal ground line with nothing else around it. The screen's
-question mark is the single blue accent detail. Vast cream negative space,
-lonely but charming, sketchbook doodle feel.
+SUBJECT: A single closed padlock rendered as a polished dark-metal object,
+centred, with a soft electric blue (#2563EB) glow emanating from the keyhole
+and a faint concentric ring of light expanding outward like a shield. Very
+wide, short banner composition, deep navy backdrop, generous empty space on
+both sides. No text, no credit cards, no shield clipart, no lock icon
+graphics — a real photographic-looking object.
 ```
 
 ---
 
-## Kullanım Notları
+## 5) Hakkımızda — Mağaza Atmosferi
 
-- **Sırayla üret, aynı sohbette kal:** Gemini'ye önce stil prefix'ini tek başına gönderip bir "referans" görsel ürettirip, sonraki her prompt'ta *"aynı stilde ama şu konu"* diye devam etmek, farklı sohbetlerde tek tek üretmekten daha tutarlı sonuç verir.
-- **Format:** Üretilen görselleri PNG olarak indirip, siteye eklerken WebP'ye çevir (dosya boyutu için) — proje zaten `assets/images/products/` altında `.webp` kullanıyor, aynı yaklaşımı sürdür.
-- **Kaydetme yeri:** Tüm yeni görselleri `assets/images/` altına (ürün görselleriyle karışmasın diye `assets/images/products/` DIŞINA) kaydet.
-- **Ana rengi bozma:** Prompt'lardaki tek accent renk `#2563EB` — sitenin `--primary` değişkeniyle birebir aynı. Farklı bir mavi tonu çıkarsa, prompt'a `exact hex #2563EB` ekleyerek tekrar dene.
-- **Alt metin unutma:** Her görseli siteye eklerken anlamlı bir `alt` metni yaz (SEO + erişilebilirlik) — bu görseller dekoratif olsa da `alt=""` yerine kısa açıklama tercih edilmeli çünkü çoğu içerikle ilişkili (örn. `alt="Akıllı saat çizimi"`).
-- **Karanlık mod:** Siteye artık dark mode eklendi (bkz. `CHANGELOG.md`). Bu görseller kirli-beyaz/krem zeminle üretiliyor; karanlık modda kart arka planı koyulaşacağı için görselleri şeffaf PNG olarak indirip CSS'te `background: var(--surface-2)` gibi bir kart içine oturtmak, krem zemin koyu temada garip durmasını önler.
+**Kullanım yeri:** `hakkimizda.html:297` (şu an `hakkimizda-sketch.webp`).
+**Boyut:** 1600×1100 px.
+**Kayıt:** `assets/images/hakkimizda-magaza.webp`
+
+```
+STYLE: Warm, editorial interior photography, golden-hour daylight coming
+through a shopfront window, shot at 35mm with natural depth of field. Real,
+lived-in, human scale — an independent neighbourhood electronics and telecom
+store, not a corporate big-box retailer. Muted warm greys and wood tones with
+one cool blue (#2563EB) accent from a backlit shelf edge or display glow.
+Photographic, not illustrated. No text, no readable signage, no logos, no
+recognisable faces (people only as soft out-of-focus silhouettes if at all).
+
+SUBJECT: The interior of a small clean electronics shop — a glass counter
+with smartwatches and earbuds neatly arranged on risers, a wooden wall shelf
+behind it with boxed accessories, a single pendant lamp overhead. Everything
+tidy and deliberately sparse, showing care rather than volume. Wide
+composition with calm empty space in the upper third.
+```
+
+---
+
+## 6) Boş Durum (Empty State) Görselleri — B ailesi (farklı stil)
+
+Boş durumlar kart **içinde**, açık zeminde görünür ve küçüktür. Fotoğraf orada ağır kaçar. Burada ayrı bir stil ailesi kullan:
+
+**B ailesi stil sabiti:**
+```
+STYLE: Minimal 3D-rendered icon illustration on a fully transparent
+background (PNG with alpha). Soft clay-like matte surfaces, gentle ambient
+occlusion, one soft shadow directly beneath the object. Two-tone palette
+only: neutral slate grey (#94A3B8) for the object body and electric blue
+(#2563EB) for exactly one highlighted detail. Rounded, friendly, slightly
+oversized proportions. Centred, generous padding around the object. No
+background, no ground plane, no text, no gradients behind the subject.
+```
+
+**Boyut:** 600×600 px, **şeffaf PNG** (karanlık modda da çalışması için zorunlu).
+
+### 6a. Boş sepet → `assets/images/empty-cart.png`
+```
+[B ailesi STYLE prefix]
+SUBJECT: An empty shopping basket tilted slightly, seen from a three-quarter
+angle, nothing inside it. One small blue dot floats just above the rim as if
+an item is about to drop in.
+```
+
+### 6b. Boş favoriler → `assets/images/empty-favorites.png`
+```
+[B ailesi STYLE prefix]
+SUBJECT: A rounded hollow heart shape with a thick soft outline and an empty
+centre. A single small solid blue heart floats beside it, much smaller, as an
+invitation.
+```
+
+### 6c. Sipariş yok → `assets/images/empty-orders.png`
+```
+[B ailesi STYLE prefix]
+SUBJECT: A closed cardboard-style shipping box with a blue tape strip across
+the top seam, sitting alone. Nothing else in frame.
+```
+
+### 6d. Sonuç bulunamadı → `assets/images/empty-search.png` (YENİ — `urunler.html` filtre boş dönünce)
+```
+[B ailesi STYLE prefix]
+SUBJECT: A rounded magnifying glass tilted at 30 degrees, its lens empty and
+faintly blue-tinted, with three tiny grey dots scattered below it suggesting
+nothing was found.
+```
+
+---
+
+## 7) 404 Sayfası
+
+**Boyut:** 1200×900 px, şeffaf PNG. **Kayıt:** `assets/images/404.png`
+```
+[B ailesi STYLE prefix]
+SUBJECT: A smartwatch lying flat on its side, screen dark except for a single
+blue question-mark-shaped glow arc, with one small disconnected cable end
+floating nearby. Calm and charming, not alarming.
+```
+
+---
+
+## 8) Sosyal Paylaşım (OG) Görseli
+
+**Kullanım yeri:** `og:image` meta etiketi (tüm sayfalar).
+**Boyut:** 1200×630 px — **metin Gemini'ye yazdırılmaz**, sonradan sen ekleyeceksin.
+```
+[A ailesi STYLE prefix — COMPOSITION satırını şununla değiştir:]
+COMPOSITION: 1200x630 landscape. Products clustered in the right third; the
+left two thirds is clean deep-navy negative space reserved for a logo and a
+headline that will be added later in an editor.
+
+SUBJECT: A smartwatch and a pair of true-wireless earbuds in an open case,
+lit with a blue rim light, floating over a deep navy gradient.
+```
+
+---
+
+## 9) Üretim Kuralları / Kontrol Listesi
+
+- **Aynı sohbette üret.** Önce A ailesi prefix'iyle 2a'yı ürettir, beğendiğini onayla, sonra *"same style, new subject: ..."* diyerek devam et. Farklı sohbetlerde stil kayar.
+- **Marka/logo çıkarsa at.** Gemini sık sık Apple/Samsung benzeri logo uyduruyor. Logolu, yazılı, filigranlı çıktı **kullanılmaz** — hem hukuki risk hem `CLAUDE.md` kuralı.
+- **Yazı çıkarsa at.** Üretken modeller bozuk harf yazar; hepsi "no text" ile üretilecek, metin UI tarafında.
+- **Ürün fotoğrafı olarak KULLANILMAZ.** Bu görsellerin hiçbiri `assets/images/products/` altına konmaz. Katalogda satılan ürünü yalnız üreticinin gerçek görseli temsil eder.
+- **Format:** PNG indir → WebP'ye çevir, yanına `.jpg` fallback bırak (`<img onerror>` zincirinde kullanılıyor).
+  ```bash
+  cwebp -q 82 category-aksesuar.png -o category-aksesuar.webp
+  ```
+- **Boyut hedefi:** kategori/hero görseli WebP'de **250 KB altı** kalsın; hero 400 KB'ı aşmasın.
+- **Kayıt yeri:** `assets/images/` (ürün klasörünün dışı).
+- **Şeffaflık:** B ailesi (boş durum + 404) mutlaka alpha kanallı PNG — WebP'ye çevirirken `-alpha_q 100`.
+- **Karanlık mod testi:** görseli ekledikten sonra sayfayı hem açık hem koyu temada aç. Beyaz/krem zemin görünüyorsa görsel yanlış üretilmiş demektir.
+- **Alt metin:** her `<img>` anlamlı `alt` alır (örn. `alt="Şarj adaptörü ve kablo aksesuarları"`). Dekoratif de olsa boş bırakma.
+- **Kod tarafı:** `aksesuar` ve `ses` kategori kartlarına `<img>` etiketi eklendi; dosya yoksa `onerror="this.remove()"` ile gradyan fallback'e düşüyor. Yani görselleri üretip `assets/images/` altına atman yeterli, HTML'e dokunmana gerek yok.

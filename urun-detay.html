@@ -477,11 +477,16 @@ function changeImage(src, thumbEl) {
 /* ─── Renk seçimi ↔ görsel eşleşmesi ───
    Ürünün `colorImages` haritasında seçilen rengin görseli varsa ana görsel
    o renge geçer. Böylece müşteri "Roze Altın" seçtiğinde ekranda siyah ürün
-   kalmaz. Haritada karşılığı olmayan renklerde galeri olduğu gibi bırakılır. */
+   kalmaz. Harita var ama seçilen rengin karşılığı yoksa ana görsel ürünün
+   varsayılan görseline döner — aksi halde ekranda BAŞKA rengin görseli asılı
+   kalırdı. Harita hiç yoksa galeri olduğu gibi bırakılır. */
 function showColorImage(product, color) {
-  const src = product && product.colorImages && product.colorImages[color];
+  const map = product && product.colorImages;
   const mainImg = document.getElementById('main-img');
-  if (!src || !mainImg) return;
+  if (!map || !mainImg) return;
+
+  const src = map[color] || (product.images && product.images[0]);
+  if (!src) return;
 
   mainImg.src = src;
   mainImg.alt = `${product.name} – ${color}`;

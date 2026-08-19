@@ -3,6 +3,230 @@
 Bu dosya projede yapılan her ekleme, değişiklik ve kaldırmayı kayıt altına alır.
 En yeni kayıtlar en üstte.
 
+## 2026-08-19 (Gemini görselleri siteye bağlandı)
+
+- Feat: Gemini ile üretilen dekoratif görseller projeye eklendi — hero,
+  kategori kartları (saat, kulaklık, aksesuar, ses), hakkımızda mağaza
+  fotoğrafı, boş durum çizimleri (sepet, favoriler, siparişler, arama),
+  404 çizimi, kargo/ödeme şeritleri ve OG görseli. Hepsi `.webp` + `.jpg`/
+  `.png` olarak `assets/images/` altında.
+- Feat: Boş durumlardaki SVG ikonlar 3D çizimlerle değiştirildi
+  (`sepet.html`, `profil.html` sipariş + favori listeleri, `js/products.js`
+  ürün ızgarası). Yeni `.empty-illustration` sınıfı `css/main.css` içinde.
+- Feat: `404.html` eklendi — Vercel statik dağıtımında bulunamayan yollar için
+  sunulur. Sayfa herhangi bir derinlikten sunulabildiği için `<base href="/">`
+  ile göreli yollar kökten çözülüyor.
+- Change: `dev-server.js` artık bulunamayan yol için düz metin yerine
+  `404.html` döndürüyor (durum kodu yine 404).
+- Not: `banner-kargo` ve `banner-odeme` şeritleri ile `assets/images/og-image.*`
+  henüz hiçbir sayfaya bağlanmadı. OG görselinde logo/başlık yok; meta
+  etiketleri markalı `assets/logos/og-image.jpg` görselini göstermeye devam
+  ediyor.
+
+## 2026-08-19 (renk seçimi görselleri + Gemini prompt'ları)
+
+### Renk seçince o rengin görseli açılıyor
+
+- Feat: Ürün detayında renk chip'ine tıklanınca galerinin o rengin görselini
+  göstermesi için `colorImages` haritası 10 üründe dolduruldu (üreticinin
+  kendi CDN'i): Huawei Watch GT 6 46mm, GT 6 Pro (Siyah/Kahverengi),
+  Watch Fit 4, FreeBuds SE 3, Samsung Galaxy Watch9 40mm, Galaxy Buds4 Pro,
+  25W adaptör, Apple Watch S10 42mm titanyum, Xiaomi Redmi Buds 8 ve
+  Buds 8 Lite. Toplam 20 yeni renk görseli eklendi.
+- Fix: `showColorImage()` artık harita var ama seçilen rengin karşılığı yoksa
+  varsayılan görsele dönüyor; eskiden ekranda önceki rengin görseli asılı
+  kalıyordu.
+- Not: Bir üründe renk görseli ya TÜM renkleri kapsar ya da hiç eklenmez.
+  JBL (7 ürün) ve kalan Xiaomi (4 ürün) için üreticinin sitesi bot korumalı /
+  renk render'ı yayınlamıyor. Galaxy Watch9 44mm "Gümüş" resmi render'ı yeşil
+  kayışla geldiği için (yanlış renk kuralı), Apple S10 46mm "Gümüş" varyantının
+  Apple karşılığı belirsiz olduğu için bu iki ürün eksik bırakıldı.
+
+### Gemini görsel prompt'ları yeniden yazıldı
+
+- Change: `docs/gemini-gorsel-promptlari.md` sıfırdan yazıldı. Eski krem
+  zeminli çizim (line-art) yönü, e-ticaret vitrinine uymadığı için bırakıldı;
+  yerine koyu lacivert zeminli, stüdyo ışıklı premium ürün fotoğrafı yönü
+  geldi. Yeni "Aksesuarlar" ve "Ses & Diğer" kategorileri için prompt eklendi.
+- Feat: Aksesuar ve Ses kategori kartlarına `<img>` etiketi eklendi; dosya
+  yoksa gradyan + ikon fallback'ine düşüyor.
+
+## 2026-08-19 (katalog görsel denetimi)
+
+### Gerçeği yansıtmayan ürün görselleri temizlendi
+
+- Fix: 54 ürünün 167 görseli tek tek gözden geçirildi; **28 görsel yanlış**
+  çıktı ve silindi, yerlerine üreticinin kendi CDN'inden doğrusu indirildi
+  (Apple `store.storeimages`, Samsung `searchapi`/`images.samsung.com`,
+  Huawei `consumer.huawei.com/dam`, Xiaomi `appmifile`, JBL için yetkili
+  satıcı). Başlıca hatalar:
+  - Satılmayan renk: JBL PartyBox Club 120 (yalnız Siyah) beyaz gövde,
+    JBL Go 5 (yalnız Mavi) gri + kamuflaj, Apple Watch S9 41mm
+    (Kırmızı/Pembe) siyah + çelik kasa, Watch8 Classic (Beyaz) siyah,
+    Galaxy Watch9 44mm (Siyah/Gümüş) yeşil kayış, GT 6 41mm (Mor) yeşil,
+    GT 6 46mm (Siyah/Yeşil) mor, Crossbody Strap (Bright Guava) yeşil+mavi,
+    Üçlü Şarj Adaptörü (Siyah) beyaz, Tune Beam 2 beyaz.
+  - Başka ürün: AirPods 4 galerisinde AirPods **Max**, Galaxy Buds4
+    galerisinde Buds4 **Pro**, GT 6 Pro galerisinde standart GT 6,
+    Galaxy Buds3 FE galerisinde S25 FE **telefon** reklamı.
+  - Yanlış bölge fişi: Apple 20W/35W (ABD), Samsung 25W/45W (İngiltere) —
+    Türkiye'de AB fişli ürün satılıyor.
+  - Ürün fotoğrafı olmayanlar: reklam afişi, karşılaştırma tablosu,
+    "kutunun içindekiler" şeması, başka satıcının filigranlı görseli,
+    masada çekilmiş amatör fotoğraflar, çok renkli koleksiyon kolajları.
+- Add: `CLAUDE.md` → "Ürün görselleri" bölümü. Bundan sonra Excel'den ürün
+  eklerken uygulanacak denetim kuralı ve üretici CDN'lerinden doğru görselin
+  nasıl çekileceği (Apple `_GEO_EMEA` AB fişi eki, Samsung model kodu → galeri
+  API'si, Huawei `-thumb` eki atma, Xiaomi ürün sayfası) yazıldı.
+- Not: Samsung 25W adaptöründe yalnız 1 doğru görsel kaldı; JBL Tune Beam 2
+  ve GT 6 Pro'da birer görsel silindi, yerine kaynak bulunamadı (JBL ve
+  Walmart bot korumasında). Hiçbir ürün görselsiz kalmadı.
+
+## 2026-08-18 (müşteri talepleri + işletim dokümanı)
+
+### İki "yazılıyor ama hiç okunmuyor" özelliği kapatıldı
+
+- Add: `api/admin/inbox.js` + panelde **Talepler** sekmesi.
+  - `productQuestions`: müşteri ürün sayfasından soru sorabiliyordu ama
+    yanıtlamanın panelde karşılığı **yoktu** — yanıt yalnız Firebase
+    Console'dan elle yazılabiliyordu, pratikte hiç yazılmıyordu. Artık
+    panelden yanıtlanıyor (yanıtsızlar listede üstte), yanıt kaldırılabiliyor,
+    spam silinebiliyor. Yanıt yalnız Admin SDK ile yazılır.
+  - `stockAlerts`: "gelince haber ver" talepleri kaydediliyor ama **hiçbir
+    yerden okunmuyordu** — talep eden müşteriye asla dönülemezdi. Artık
+    panelde ürün/e-posta/tarih olarak listeleniyor. (Toplu mail gönderimi
+    otomatik değil; sebebi yapılacaklar dosyasında.)
+- Add: `docs/PAYTR-ENTEGRASYON.md` → bölüm 6'ya sipariş yaşam döngüsü tablosu
+  (hangi durumu kim yazar), stok kuralları ve kargo/bildirim akışı eklendi.
+  Kargo takip numarasının **durum değişikliğinden ÖNCE** kaydedilmesi gerektiği
+  ayrıca vurgulandı — ters sırada numara müşteri mailine girmiyor.
+- Add: 30 yeni test (216 → 246): kargo takip numarasının kaydı ve biçim
+  doğrulaması, durum maillerinin yalnız durum değiştiğinde gitmesi, teslim
+  mailindeki cayma hakkı hatırlatması, talepler kutusunun listeleme/yanıtlama/
+  silme uçları ve yetkisiz erişime kapalı olması.
+- Fix: `admin.html` içinde `escapeAdminHtml` mükerrer tanımlanmıştı ve var
+  olmayan bir `getProductsForAdmin()` çağrılıyordu; ikisi de düzeltildi.
+- Docs: `docs/ARKADAS-YAPILACAKLAR.md` → "Kod tarafında yapılamayanlar"
+  tablosu eklendi. Statik katalog stoğu, otomatik stok bildirimi maili,
+  kargo firması entegrasyonu, e-fatura, dağıtık hız sınırı ve Firestore katı
+  kuralı; her biri **neden** kodla çözülemediğiyle birlikte yazıldı.
+
+## 2026-08-18 (sipariş yaşam döngüsü: taksit, stok, kargo, bildirim)
+
+### Sipariş sonrası akış tamamlandı; sessiz bir veri kaybı hatası düzeltildi
+
+- Fix (VERİ KAYBI): Kargo takip numarası **hiçbir yere kaydedilmiyordu.**
+  `admin.html → saveTrackingNumber()` numarayı `js/data.js` üzerinden
+  `localStorage`'a yazıyordu; siparişler ise Firestore'a taşınmıştı. Yönetici
+  "kaydedildi" bildirimi görüyor, modal yeniden açıldığında alan boş dönüyor,
+  müşteri numarayı hiç göremiyordu. Artık `/api/admin/orders` üzerinden
+  `orders/{id}.trackingNumber` alanına yazılıyor (biçim doğrulamalı: harf,
+  rakam, tire; en fazla 64 karakter).
+- Add: **Taksit bilgisi görünür oldu.** `payment.installmentCount` PayTR
+  bildiriminden zaten yakalanıyordu ama hiçbir ekranda gösterilmiyordu.
+  Artık admin sipariş detayında ("Kredi Kartı — 3 taksit"), müşterinin
+  `profil.html` sipariş kartında ve `odeme-sonuc.html` özetinde görünüyor.
+- Add: **Stok düşümü** (`api/_lib/store.js` → `decrementStock`). Stok ödeme
+  ONAYLANINCA düşer (sipariş açılırken değil — tahsil edilmemiş sipariş stok
+  kilitlememeli). Tek transaction: ya tüm satırlar düşer ya hiçbiri. Yetmezse
+  sipariş `paid` YAPILMAZ, `pending_review`e düşer (para alındı, sevkiyat durur).
+- Add: `restoreStock()` telafisi — stok düşüp sipariş durumu yazılamazsa
+  (eşzamanlı ikinci bildirim yarışı kazandıysa) düşülen stok geri verilir.
+  Bu olmadan tekrarlanan bildirimler stoğu iki kez düşürebilirdi.
+- Add: `api/_lib/order-mails.js` — müşteriye durum bildirimleri: kargoya
+  verildi (takip numarasıyla), teslim edildi (+ 14 gün cayma hatırlatması),
+  iptal edildi (tahsilat yapılmışsa iade bilgisiyle), iade yapıldı (tutar +
+  süre). Mail yalnız durum GERÇEKTEN değiştiyse gider; aynı durumu tekrar
+  kaydetmek ikinci mail üretmez. Mail hatası yönetici işlemini geri almaz ama
+  "gönderildi" de denmez — yanıtta `customerMailed` olarak bildirilir.
+- Add: Admin panelinde **iade ve mutabakat arayüzü** — geçen turda eklenen
+  `/api/admin/refund` ve `/api/admin/reconcile` uçları artık sipariş detayından
+  kullanılabiliyor. İade öncesi onay istenir, kalan tutar gösterilir, kısmi iade
+  yapılabilir. Mutabakat sonucu fark listesiyle ekranda gösterilir.
+- Add: Ödeme doğrulama sorunları (`amount_mismatch`, `insufficient_stock` …)
+  artık sipariş detayında uyarı kutusunda okunabilir Türkçe ile gösteriliyor —
+  "sevkiyat başlatmayın" uyarısıyla birlikte.
+- Add: 11 yeni akış testi (205 → 216): stok düşümü, tekrar bildiriminde çift
+  düşüm olmaması, stok yetersizken "hep ya hiç" davranışı ve `pending_review`e
+  düşme.
+- Change: `A-05` (stok) bulgusunun kod tarafı kapandı. Kalan sınır: stok yalnız
+  panelden yönetilen (Firestore) ürünlerde takip edilir; statik katalogdaki
+  ürünlerde stok alanı yoktur ve o satırlar `skipped` döner — düştü sayılmaz.
+
+## 2026-08-18 (PayTR gereklilikleri — iade, mutabakat, taksit tavanı)
+
+### Ödeme sonrası işletim uçları eklendi; iki açık bulgu kapandı
+
+PayTR'nin dokümante ettiği dört servisten yalnız ikisi (token alma, bildirim)
+kullanılıyordu. İade ve durum sorgu servisleri eklendi; böylece iade ve mutabakat
+işlemleri PayTR panelinden elle yapılmak yerine kendi panelimizden, kayıt bırakarak
+yapılabiliyor.
+
+- Add: `api/_lib/paytr.js` → `refundPayment()` + `refundHash()` (İade servisi,
+  `https://www.paytr.com/odeme/iade`) ve `queryTransactionStatus()` + `statusHash()`
+  (Durum Sorgu, `https://www.paytr.com/odeme/durum-sorgu`). Her servisin imza alan
+  sırası farklıdır ve dosya başındaki notta yazılıdır.
+- Add: `kurusFromDecimal()` — durum sorgu yanıtı tutarları ondalıklı döner
+  (`"10.8"`); kayan nokta hatasına karşı yuvarlanarak kuruşa çevrilir.
+- Add: `POST /api/admin/refund` — tam/kısmi iade. Yalnız `paid` ve kartla ödenmiş
+  siparişler; iade tutarı **kalan tutarı aşamaz** (önceki iadeler düşülür, aşan istek
+  PayTR'ye hiç gitmez); toplam iade sipariş tutarına ulaşınca durum `refunded` olur.
+  Her iade `refunds[]` içine kim/ne zaman/ne kadar olarak yazılır. Sipariş kaydı
+  transaction içinde güncellenir, yarış durumunda toplam bozulmaz. PayTR'ye
+  ulaşılamazsa kayıt değişmez; iade yapılıp kayıt yazılamazsa uç açıkça
+  "tekrar denemeyin" der (çift iade riski sessizce geçilmez).
+- Add: `GET /api/admin/reconcile?orderId=...` — bizim kaydımızı PayTR'nin durum
+  sorgusuyla karşılaştırır. Yakaladıkları: `amount_mismatch`, `remote_paid_local_not`
+  (bildirim URL'si çalışmıyor), `local_paid_remote_not`, `refund_mismatch` (panelden
+  elle iade), `environment_mismatch`. **Hiçbir şeyi otomatik düzeltmez** — tutar
+  uyuşmazlığı insan kararı gerektirir, sessiz düzeltme sorunu gizler.
+- Add (MEVZUAT): `BDDK_ELECTRONICS_MAX_INSTALLMENT` (`api/_lib/env.js`) — katalog
+  tamamen elektronik/telekomünikasyon ürünü olduğu için taksit sayısı sabit bir
+  tavanla (3) kırpılır ve kırpma log'a düşer. Kaza önleyicidir, uyum garantisi değildir.
+- Add: 25 yeni test (180 → 205). İmza testleri alan sırasını bağımsız hesaplayarak
+  sabitler — sıra bozulursa PayTR isteği reddeder ama kod sessizce "başarısız"
+  görünürdü.
+- Change: `docs/PAYTR-ENTEGRASYON.md` → "İade / iptal", "Taksit açmak" ve "Mutabakat"
+  bölümleri yeni uçlara göre yeniden yazıldı.
+- Change: `docs/ARKADAS-YAPILACAKLAR.md` → PayTR panelinde elle yapılacak işler
+  M-1…M-8 olarak eklendi (entegrasyon bilgileri, Bildirim URL, test işlemi doğrulama,
+  görünüm/taksit ayarları, canlı mod başvurusu ve onay beklentisi, iade süreci kararı,
+  BDDK teyidi, haftalık mutabakat). A-03 ve A-04 bulgularının kod tarafı kapandı.
+
+## 2026-08-18 (sağlayıcı temizliği — tek sağlayıcı: PayTR)
+
+### Projedeki eski ödeme sağlayıcısı izleri kaldırıldı
+
+Sağlayıcı geçişi sonrası kodda, kurallarda ve dokümanlarda kalan eski sağlayıcı
+referansları temizlendi; proje tek ödeme sağlayıcısı (PayTR) üzerine oturtuldu.
+
+- Fix (GÜVENLİK): `firestore.rules` içinde `match /orders/{orderId}` bloğu **iki kez**
+  tanımlıydı (biri branch merge'ünden gelen eski sürüm). Firestore aynı yola uyan
+  blokların `allow` kurallarını **OR'lar**; bu yüzden katı `create, update, delete: if false`
+  kuralı, alttaki `allow update: if request.auth.token.admin == true` tarafından etkisiz
+  hale geliyordu — `admin` custom claim'i olan bir hesap sipariş kayıtlarını tarayıcıdan
+  güncelleyebilirdi. Eski blok kaldırıldı; sipariş yazma otoritesi yeniden yalnız sunucuda.
+- Remove: `paymentAttempts` kural bloğu — eski 3DS akışından kalma, hiçbir kod tarafından
+  kullanılmıyordu.
+- Remove: `docs/ARSIV-IYZICO-ENTEGRASYON.md`, `docs/IYZICO-DENETIM-RAPORU.md`,
+  `docs/deep-research-report.md`. Denetim raporundaki **hâlâ açık** bulgular kaybolmadı;
+  `docs/ARKADAS-YAPILACAKLAR.md` → "Açık bulgular" tablosuna (A-01…A-08) taşındı.
+- Fix: `docs/instagram/spec.json`, `onizleme.html`, `GONDERILER.md` — müşteriye görünen
+  "Ödeme güvenli mi?" SSS yanıtı yanlış sağlayıcı adı veriyordu, PayTR olarak düzeltildi.
+  (Uyarı: `docs/instagram/gorseller/` altındaki PNG'ler eski metinle üretilmiş olabilir.)
+- Change: `firestore.rules`, `scripts/sync-catalog.mjs`, `api/_lib/orders.js`, `CLAUDE.md`,
+  `README.md`, `docs/RAPOR.md`, `docs/PAYTR-ENTEGRASYON.md` — kod yorumları ve çapraz
+  referanslar sağlayıcıdan bağımsız hale getirildi, silinen dosyalara giden bağlantılar
+  düzeltildi.
+- Change: `docs/ARKADAS-YAPILACAKLAR.md` baştan yazıldı. Tamamlanmış işlerin uzun özgün
+  prompt'ları ve gerçekleşmeyen iddialar ("ödeme simülasyon", doldurulmuş sayılan boş
+  alanlar, kaldırılmış `COUPONS` objesi) çıkarıldı; yerine sıralı kurulum adımları,
+  canlıya geçiş kontrol listesi, açık bulgular tablosu, üye işyeri başvuru evrakları ve
+  sorun giderme tablosu eklendi.
+
+> Not: Bu changelog'un geçmiş kayıtlarında eski sağlayıcının adı **bilerek** duruyor —
+> changelog neyin ne zaman değiştiğinin kaydıdır; geçmişi değiştirmek onu yanlış yapar.
+
 ## 2026-08-18 (kurulum teşhisi)
 
 ### `/api/payment/config` artık yapılandırma hatasının SEBEBİNİ söylüyor

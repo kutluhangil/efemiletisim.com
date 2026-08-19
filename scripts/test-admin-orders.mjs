@@ -35,6 +35,9 @@ process.env.ADMIN_EMAILS = 'patron@efemiletisim.com, destek@efemiletisim.com';
 
 /* ─── Sahte sipariş defteri ─── */
 const orders = new Map();
+const mails = [];
+const questions = new Map();
+const alerts = new Map();
 const users  = new Map();
 let tokenIdentity = null;   // { uid, email, emailVerified } | null
 
@@ -69,13 +72,17 @@ const fakeStore = {
     const all = [...orders.values()].sort((a, b) => (a.date < b.date ? 1 : -1));
     return status ? all.filter(o => o.status === status) : all;
   },
-  setOrderStatus: async (id, status, label, actor) => {
+  setOrderStatus: async (id, status, label, actor, { trackingNumber } = {}) => {
     const cur = orders.get(id);
     if (!cur) return { applied: false, reason: 'not_found', order: null };
-    if (cur.status === status) return { applied: false, reason: 'no_change', order: cur };
+    const statusChanged   = cur.status !== status;
+    const trackingChanged = trackingNumber !== undefined
+      && (cur.trackingNumber || null) !== (trackingNumber || null);
+    if (!statusChanged && !trackingChanged) return { applied: false, reason: 'no_change', order: cur };
     const next = { ...cur, status, statusLabel: label, fulfillment: { updatedBy: actor, previousStatus: cur.status } };
+    if (trackingNumber !== undefined) next.trackingNumber = trackingNumber || null;
     orders.set(id, next);
-    return { applied: true, order: next };
+    return { applied: true, statusChanged, trackingChanged, order: next };
   },
   syncUserOrderStatus: async (uid, orderId, status, label) => {
     const u = users.get(uid);
@@ -93,7 +100,17 @@ const fakeStore = {
     return { applied: true, order: orders.get(id) };
   },
   appendOrderToUserProfile: async () => {},
-  queueMail: async () => {},
+  listProductQuestions: async () => [...questions.values()],
+  answerProductQuestion: async (id, answer, actor) => {
+    if (!questions.has(id)) return { applied: false, reason: 'not_found' };
+    questions.set(id, { ...questions.get(id), answer, answeredBy: answer ? actor : null });
+    return { applied: true };
+  },
+  listStockAlerts: async () => [...alerts.values()],
+  deleteInboxItem: async (col, id) => {
+    (col === 'productQuestions' ? questions : alerts).delete(id);
+  },
+  queueMail: async (to, subject, html) => { mails.push({ to, subject, html }); },
   recordEventOnce: async () => true
 };
 
@@ -209,6 +226,113 @@ console.log('\n5) geç gelen ödeme bildirimi sevkiyatı geri almamalı');
     currency: 'TL', test_mode: '1'
   }, { source: 'test' });
   check('durum korundu', orders.get('EFM260818AAAAAA').status, before);
+}
+
+console.log('\n6) kargo takip numarası siparişe yazılır');
+const mailsBeforeShip = mails.length;
+{
+  const r = await call(adminOrders, { method: 'POST', body: {
+    orderId: 'EFM260818BBBBBB', status: 'shipped', trackingNumber: 'YK-123456789'
+  }});
+  check('güncelleme başarılı', r.res.statusCode, 200);
+  check('takip no kaydedildi', orders.get('EFM260818BBBBBB').trackingNumber, 'YK-123456789');
+  check('yanıtta takip no dönüyor', r.json.trackingNumber, 'YK-123456789');
+}
+
+console.log('\n7) durum değişince müşteriye mail gider');
+{
+  const yeni = mails.slice(mailsBeforeShip);
+  check('tek yeni mail', yeni.length, 1);
+  check('konu kargo maili', yeni[0].subject.includes('kargoya verildi'), true);
+  check('takip numarası mailde var', yeni[0].html.includes('YK-123456789'), true);
+}
+
+console.log('\n8) aynı durumu tekrar kaydetmek ikinci mail üretmez');
+{
+  const before = mails.length;
+  await call(adminOrders, { method: 'POST', body: { orderId: 'EFM260818BBBBBB', status: 'shipped' } });
+  check('yeni mail yok', mails.length, before);
+}
+
+console.log('\n9) geçersiz takip numarası reddedilir');
+{
+  const bad = await call(adminOrders, { method: 'POST', body: {
+    orderId: 'EFM260818BBBBBB', status: 'shipped', trackingNumber: 'YK 123/456'
+  }});
+  check('400 döner', bad.res.statusCode, 400);
+  check('hata kodu', bad.json.code, 'invalid_tracking');
+  check('takip no değişmedi', orders.get('EFM260818BBBBBB').trackingNumber, 'YK-123456789');
+
+  const long = await call(adminOrders, { method: 'POST', body: {
+    orderId: 'EFM260818BBBBBB', status: 'shipped', trackingNumber: 'A'.repeat(65)
+  }});
+  check('65 karakter reddedilir', long.res.statusCode, 400);
+}
+
+console.log('\n10) teslim maili cayma hakkını hatırlatır');
+{
+  await call(adminOrders, { method: 'POST', body: { orderId: 'EFM260818BBBBBB', status: 'delivered' } });
+  const d = mails.filter(m => m.subject.includes('teslim edildi'));
+  check('teslim maili gitti', d.length, 1);
+  check('14 gün geçiyor', d[0].html.includes('14'), true);
+}
+
+console.log('\n11) müşteri talepleri kutusu — sorular');
+{
+  const adminInbox = require('../api/admin/inbox.js');
+  questions.set('q1', { id: 'q1', productId: 1, question: 'Kutuda şarj aleti var mı?', answer: null });
+  questions.set('q2', { id: 'q2', productId: 2, question: 'Suya dayanıklı mı?', answer: 'Evet, 5ATM.' });
+  alerts.set('a1', { id: 'a1', productId: 1, email: 'musteri@example.com', createdAt: null });
+
+  const list = await call(adminInbox, { method: 'GET', query: { type: 'questions' } });
+  check('liste 200', list.res.statusCode, 200);
+  check('soru sayısı', list.json.count, 2);
+  check('yanıtsız sayısı', list.json.unanswered, 1);
+
+  const ans = await call(adminInbox, { method: 'POST', body: {
+    type: 'question', id: 'q1', answer: 'Evet, 20W adaptör kutuda geliyor.'
+  }});
+  check('yanıt kaydedildi', ans.res.statusCode, 200);
+  check('yanıt siparişe yazıldı', questions.get('q1').answer, 'Evet, 20W adaptör kutuda geliyor.');
+  check('yanıtlayan kaydedildi', questions.get('q1').answeredBy, 'patron@efemiletisim.com');
+
+  const cleared = await call(adminInbox, { method: 'POST', body: { type: 'question', id: 'q1', answer: null } });
+  check('yanıt kaldırıldı', cleared.res.statusCode, 200);
+  check('yanıt null', questions.get('q1').answer, null);
+
+  const tooShort = await call(adminInbox, { method: 'POST', body: { type: 'question', id: 'q2', answer: 'x' } });
+  check('tek harflik yanıt 400', tooShort.res.statusCode, 400);
+
+  const missing = await call(adminInbox, { method: 'POST', body: {
+    type: 'question', id: 'yok', answer: 'Geçerli uzunlukta bir yanıt.'
+  }});
+  check('olmayan soru 404', missing.res.statusCode, 404);
+}
+
+console.log('\n12) müşteri talepleri kutusu — stok bildirimleri');
+{
+  const adminInbox = require('../api/admin/inbox.js');
+  const list = await call(adminInbox, { method: 'GET', query: { type: 'alerts' } });
+  check('liste 200', list.res.statusCode, 200);
+  check('talep sayısı', list.json.count, 1);
+  check('e-posta dönüyor', list.json.alerts[0].email, 'musteri@example.com');
+
+  const del = await call(adminInbox, { method: 'DELETE', body: { type: 'alert', id: 'a1' } });
+  check('silindi', del.res.statusCode, 200);
+  check('kayıt gitti', alerts.size, 0);
+
+  const bad = await call(adminInbox, { method: 'GET', query: { type: 'baska' } });
+  check('geçersiz tür 400', bad.res.statusCode, 400);
+}
+
+console.log('\n13) talepler kutusu yetkisiz erişime kapalı');
+{
+  const adminInbox = require('../api/admin/inbox.js');
+  const saved = tokenIdentity;
+  tokenIdentity = null;
+  const anon = await call(adminInbox, { method: 'GET', query: { type: 'questions' } });
+  check('kimliksiz 401', anon.res.statusCode, 401);
+  tokenIdentity = saved;
 }
 
 console.log(`\n${passed} test geçti, ${failed} test başarısız.\n`);

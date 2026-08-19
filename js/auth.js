@@ -111,6 +111,15 @@ async function saveAddresses(addresses) {
   return result;
 }
 
+/* ─── Backend çağrıları için Firebase ID token ───
+   Giriş yapılmamışsa null döner (misafir siparişleri backend'de bu şekilde
+   ayırt edilir). payment.js gibi module olmayan script'ler window üzerinden çağırır. */
+async function getIdTokenSafe() {
+  if (!session.user) return null;
+  try { return await session.user.getIdToken(); }
+  catch { return null; }
+}
+
 /* ─── Hesabı kalıcı sil ─── */
 async function deleteAccount(password) {
   const result = await deleteUserAccount(password);
@@ -239,7 +248,8 @@ Object.assign(window, {
   validatePassword,
   saveProfileFields,
   saveAddresses,
-  deleteAccount
+  deleteAccount,
+  getIdTokenSafe
 });
 
 export {
@@ -256,5 +266,6 @@ export {
   requireAuth,
   saveProfileFields,
   saveAddresses,
-  deleteAccount
+  deleteAccount,
+  getIdTokenSafe
 };

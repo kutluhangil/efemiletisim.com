@@ -51,14 +51,33 @@ function paytrMode() {
 }
 
 /* ─── Taksit ───
-   Varsayılan: taksit kapalı (no_installment = 1). Elektronik/telekomünikasyon
-   ürünlerinde BDDK taksit kısıtları vardır; taksit açılacaksa hem PayTR
-   panelinde tanımlı hem de kategori için mevzuata uygun olmalıdır. */
+   Varsayılan: taksit kapalı (no_installment = 1).
+
+   BDDK, kredi kartı taksitlerine ürün kategorisine göre üst sınır koyar ve bu
+   sınırlar dönem dönem değişir. Bu katalog tamamen elektronik/telekomünikasyon
+   ürünüdür (akıllı saat, kulaklık, şarj/aksesuar, ses cihazı) ve bu grup en dar
+   sınıra girer. Yanlışlıkla mevzuat üstü taksit gönderilmesin diye ayarlanabilir
+   değer burada sabit bir tavanla kırpılır: ortam değişkeni daha yükseğini
+   isterse tavan uygulanır ve durum loglanır.
+
+   ⚠️ Bu tavan bir "uyum garantisi" değil, kaza önleyicidir. Taksit açılacaksa
+   güncel BDDK sınırı ve PayTR panelindeki taksit tanımı işletme tarafından
+   ayrıca doğrulanmalıdır (bkz. docs/PAYTR-ENTEGRASYON.md). */
+const BDDK_ELECTRONICS_MAX_INSTALLMENT = 3;
+
 function installmentSettings() {
   const noInstallment = str('PAYTR_NO_INSTALLMENT') === '0' ? 0 : 1;
   const raw = parseInt(str('PAYTR_MAX_INSTALLMENT') || '0', 10);
-  const maxInstallment = Number.isInteger(raw) && raw >= 0 && raw <= 12 ? raw : 0;
-  return { noInstallment, maxInstallment };
+  const requested = Number.isInteger(raw) && raw >= 0 && raw <= 12 ? raw : 0;
+
+  const maxInstallment = Math.min(requested, BDDK_ELECTRONICS_MAX_INSTALLMENT);
+  if (requested > maxInstallment) {
+    console.warn(
+      '[env] PAYTR_MAX_INSTALLMENT=%d BDDK elektronik tavanının (%d) üzerinde; %d olarak uygulandı.',
+      requested, BDDK_ELECTRONICS_MAX_INSTALLMENT, maxInstallment
+    );
+  }
+  return { noInstallment, maxInstallment, requestedMaxInstallment: requested };
 }
 
 /* ─── Site ─── */
@@ -184,6 +203,7 @@ function isCardPaymentEnabled() {
 module.exports = {
   PAYTR_TOKEN_URL,
   PAYTR_IFRAME_URL,
+  BDDK_ELECTRONICS_MAX_INSTALLMENT,
   paytrConfig,
   paytrMode,
   isTestMode,

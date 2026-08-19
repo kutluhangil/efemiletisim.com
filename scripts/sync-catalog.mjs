@@ -68,7 +68,7 @@ function toKurus(price) {
 }
 
 /* Varyantlar (renk/beden) sunucuya da taşınır: müşteri hangi varyantı
-   seçtiyse sipariş kaydında ve iyzico sepetinde o görünmelidir. Fiyat ürün
+   seçtiyse sipariş kaydında ve PayTR sepetinde o görünmelidir. Fiyat ürün
    düzeyindedir; varyant fiyatı yoktur. Renk/beden bilgisi istemciden DEĞİL,
    buradan okunur. */
 function buildVariants(product) {

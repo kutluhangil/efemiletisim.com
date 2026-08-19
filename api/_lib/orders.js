@@ -216,8 +216,8 @@ function verifyOrderAccessToken(orderId, token) {
   return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(token));
 }
 
-/* Yeni (PayTR uyumlu, ayraçsız) ve eski (tireli, iyzico döneminden kalan)
-   biçim birlikte kabul edilir; eski siparişlerin durumu da okunabilsin. */
+/* Yeni (PayTR uyumlu, ayraçsız) ve eski (tireli) biçim birlikte kabul edilir;
+   eski siparişlerin durumu da okunabilsin. */
 const ORDER_ID_RE        = /^EFM\d{6}[0-9A-F]{6}$/;
 const LEGACY_ORDER_ID_RE = /^EFM\d{6}-[0-9A-F]{6}$/;
 
@@ -241,8 +241,10 @@ function publicOrderView(order) {
     items:         (order.items || []).map(i => ({
       name: i.name, color: i.color || '', size: i.size || '', qty: i.qty, totalKurus: i.totalKurus
     })),
-    date:          order.date,
-    errorMessage:  order.customerMessage || null
+    date:           order.date,
+    trackingNumber: order.trackingNumber || null,
+    installmentCount: order.payment ? (order.payment.installmentCount || 0) : 0,
+    errorMessage:   order.customerMessage || null
   };
 }
 
@@ -265,7 +267,8 @@ function legacyOrderSummary(order) {
     paymentMethod:  order.paymentMethod || 'kart',
     paymentId:      order.paymentId || null,
     eftReceiptNo:   order.eftReceiptNo || null,
-    trackingNumber: null
+    trackingNumber: order.trackingNumber || null,
+    installmentCount: order.payment ? (order.payment.installmentCount || 0) : 0
   };
 }
 

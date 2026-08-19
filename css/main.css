@@ -393,6 +393,13 @@ p { color: var(--text-secondary); }
   opacity: 0.4;
 }
 
+.empty-illustration {
+  width: 160px;
+  height: 160px;
+  object-fit: contain;
+  margin-bottom: var(--space-4);
+}
+
 .empty-state h3 { margin-bottom: var(--space-2); }
 .empty-state p  { color: var(--text-muted); margin-bottom: var(--space-6); }
 

@@ -91,6 +91,32 @@ async function settleNotification(payload, { source = 'notification' } = {}) {
   const orderWasTest = order.environment === 'test';
   if (isSuccess && notifiedTestMode !== orderWasTest) problems.push('environment_mismatch');
 
+  /* ─── Stok düşümü ───
+     Ödeme onaylandıysa stok BURADA düşer (sipariş oluştururken değil):
+     tahsilat gerçekleşmemiş bir sipariş stoğu kilitlememelidir.
+
+     Düşüm tek transaction'dır (ya hepsi ya hiçbiri). Stok yetmiyorsa sipariş
+     `paid` YAPILMAZ, `pending_review`e düşer: para çekilmiştir, sevkiyat
+     durur, ekip müşteriyle iletişime geçip iade eder veya tedarik eder.
+     Sessizce eksi stoğa düşmek ya da "ödendi" deyip gönderememek daha kötüdür.
+
+     Not: stok yalnız Firestore'daki (panelden yönetilen) ürünlerde tutulur;
+     statik katalogdaki satırlar atlanır ve loglanır — düştü SAYILMAZ. */
+  let stockResult = null;
+  if (isSuccess && problems.length === 0 && !TERMINAL.has(order.status)) {
+    try {
+      stockResult = await store.decrementStock(
+        (order.items || []).map(i => ({ id: i.id, sku: i.sku, qty: i.qty }))
+      );
+      if (!stockResult.ok) problems.push('insufficient_stock');
+    } catch (err) {
+      /* Stok düşülemedi — ödemeyi "başarılı" sayıp sevkiyata sokmayız. */
+      console.error('[settle] stok düşülemedi (%s): %s', orderId, err.message);
+      problems.push('stock_update_failed');
+      stockResult = { ok: false, error: err.message };
+    }
+  }
+
   let nextStatus;
   let customerMessage = null;
 
@@ -132,9 +158,27 @@ async function settleNotification(payload, { source = 'notification' } = {}) {
       statusLabel: statusLabelFor(nextStatus),
       customerMessage,
       payment:     paymentSnapshot,
+      ...(stockResult && stockResult.ok ? { stock: {
+        appliedAt:   new Date().toISOString(),
+        decremented: stockResult.decremented,
+        skipped:     stockResult.skipped
+      } } : {}),
       ...(nextStatus === 'paid' ? { paidAt: new Date().toISOString() } : {})
     };
   });
+
+  /* Telafi: stok düştü ama durum yazılmadıysa (eşzamanlı ikinci bildirim
+     yarışı kazandı) düşülen stok geri verilir — yoksa çift düşüm olurdu. */
+  if (stockResult && stockResult.ok && stockResult.applied && !transition.applied) {
+    try {
+      await store.restoreStock(stockResult.decremented);
+      logPaymentEvent({ event: 'stock_restored', orderId, reason: 'transition_not_applied' });
+    } catch (err) {
+      console.error('[settle] TELAFİ BAŞARISIZ — stok düştü ama sipariş yazılmadı (%s): %s',
+        orderId, err.message);
+      logPaymentEvent({ event: 'stock_restore_failed', orderId });
+    }
+  }
 
   logPaymentEvent({
     event: 'settle',
@@ -149,6 +193,9 @@ async function settleNotification(payload, { source = 'notification' } = {}) {
     paidKurus: paymentSnapshot.paidKurus,
     installment: paymentSnapshot.installmentCount,
     failedReasonCode: paymentSnapshot.failedReasonCode,
+    stockDecremented: stockResult && stockResult.ok ? stockResult.decremented.length : 0,
+    stockSkipped:     stockResult && stockResult.skipped ? stockResult.skipped.length : 0,
+    stockInsufficient: stockResult && stockResult.insufficient ? stockResult.insufficient.length : 0,
     problems
   });
 

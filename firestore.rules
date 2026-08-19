@@ -14,7 +14,7 @@ service cloud.firestore {
     //                && !request.resource.data.diff(resource.data)
     //                        .affectedKeys().hasAny(['orders']);
     //
-    // Bkz. docs/IYZICO-DENETIM-RAPORU.md → bulgu F-06.
+    // Bkz. docs/ARKADAS-YAPILACAKLAR.md → açık bulgu A-01.
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }

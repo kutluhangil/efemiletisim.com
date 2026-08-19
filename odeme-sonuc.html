@@ -149,6 +149,12 @@ function render(view, order) {
       ${itemsHtml}
       <div class="result-meta-row"><span class="label">Toplam (KDV dahil)</span><span class="value">${escapeHtml(order.totalText)}</span></div>
       <div class="result-meta-row"><span class="label">Ödeme yöntemi</span><span class="value">${order.paymentMethod === 'eft' ? 'EFT / Havale' : 'Kredi / Banka Kartı'}</span></div>
+      ${order.paymentMethod !== 'eft' && Number(order.installmentCount) > 1
+        ? `<div class="result-meta-row"><span class="label">Taksit</span><span class="value">${Number(order.installmentCount)} taksit</span></div>`
+        : ''}
+      ${order.trackingNumber
+        ? `<div class="result-meta-row"><span class="label">Kargo takip no</span><span class="value" style="user-select:all">${escapeHtml(order.trackingNumber)}</span></div>`
+        : ''}
     </div>` : '';
 
   document.getElementById('result-card').innerHTML = `

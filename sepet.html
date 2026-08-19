@@ -148,7 +148,7 @@ function renderCartPage() {
   if (cart.length === 0) {
     layout.innerHTML = `
       <div class="empty-state" style="grid-column:1/-1">
-        <div class="icon"><svg class="icon" viewBox="0 0 24 24" style="width:3rem;height:3rem"><path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></div>
+        <img class="empty-illustration" src="assets/images/empty-cart.webp" alt="Boş alışveriş sepeti çizimi" width="160" height="160" loading="lazy" onerror="this.remove()">
         <h3>Sepetiniz Boş</h3>
         <p>Henüz ürün eklemediniz. Harika ürünleri keşfedin!</p>
         <a href="urunler.html" class="btn btn-primary btn-lg"><svg class="icon" viewBox="0 0 24 24"><path d="M4 9l1-5h14l1 5"/><path d="M4 9a2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0"/><path d="M5 9v10h14V9"/></svg> Alışverişe Başla</a>

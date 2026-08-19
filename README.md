@@ -72,11 +72,13 @@
 ├─ api/                                  → Vercel Functions (sunucu tarafı ödeme)
 │  ├─ _lib/                              → PayTR istemcisi, sipariş/fiyat mantığı, Firestore
 │  ├─ payment/                           → config · initialize · notify
+│  ├─ admin/                             → orders · products · coupons · upload
+│  │                                       refund · reconcile
 │  └─ order/                             → eft · status
 ├─ scripts/                              → sync-catalog · test-payment-lib · test-payment-flow
 ├─ assets/                               → images, icons, logos
-├─ docs/                                 → RAPOR.md, IYZICO-DENETIM-RAPORU.md,
-│                                          PAYTR-ENTEGRASYON.md, ARKADAS-YAPILACAKLAR.md
+├─ docs/                                 → RAPOR.md, PAYTR-ENTEGRASYON.md,
+│                                          ADMIN-KURULUMU.md, ARKADAS-YAPILACAKLAR.md
 ├─ vercel.json / firebase.json           → hosting + güvenlik başlıkları
 ├─ .env.example                          → sunucu ortam değişkenleri şablonu
 └─ sitemap.xml / robots.txt
@@ -104,7 +106,7 @@ Gerçek **PayTR iFrame API** entegrasyonu yazıldı: tutar sunucuda hesaplanır,
 
 Ortam değişkenleri (`.env.example`) girilene kadar kart ödemesi **kapalıdır** — checkout bu durumda EFT/havale sunar ve hiçbir koşulda "ödeme başarılı" taklidi yapılmaz.
 
-Canlıya çıkış adımları: `docs/PAYTR-ENTEGRASYON.md` · Denetim bulguları: `docs/IYZICO-DENETIM-RAPORU.md`
+Canlıya çıkış adımları: `docs/PAYTR-ENTEGRASYON.md` · Açık bulgular ve yapılacaklar: `docs/ARKADAS-YAPILACAKLAR.md`
 
 ---
 
