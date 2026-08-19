@@ -169,8 +169,9 @@ const server = http.createServer(async (req, res) => {
     } else if (fs.existsSync(path.join(filePath, 'index.html'))) {
       filePath = path.join(filePath, 'index.html');
     } else {
-      res.writeHead(404, { 'Content-Type': 'text/plain; charset=UTF-8' });
-      res.end('404 Sayfa Bulunamadı');
+      const notFoundPage = path.join(__dirname, '404.html');
+      res.writeHead(404, { 'Content-Type': 'text/html; charset=UTF-8' });
+      res.end(fs.readFileSync(notFoundPage));
       return;
     }
   }

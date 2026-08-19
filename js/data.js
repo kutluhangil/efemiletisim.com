@@ -309,6 +309,11 @@ const BASE_PRODUCTS = [
     badgeLabel: "Yeni",
     stock: 10,
     images: ["assets/images/products/apple-watch-s10-42-ti-1.jpg", "assets/images/products/apple-watch-s10-42-ti-2.webp", "assets/images/products/apple-watch-s10-42-ti-3.png"],
+    /* Renk seçilince galeride o rengin görseli gösterilir (üretici görselleri). */
+    colorImages: {
+      "Altın": "assets/images/products/apple-watch-s10-42-ti-renk-altin.png",
+      "Gümüş": "assets/images/products/apple-watch-s10-42-ti-renk-gumus.png"
+    },
     desc: "Cilalı titanyum kasa, safir kristal ekran ve Milano Loop kayış. Series 10'un en prestijli hali, 42mm gövdede.",
     specs: [
       { key: "Ekran",      value: "42mm geniş açılı LTPO3 Hep Açık Retina OLED, 2000 nit, safir kristal" },
@@ -504,6 +509,11 @@ const BASE_PRODUCTS = [
     badgeLabel: null,
     stock: 10,
     images: ["assets/images/products/huawei-watch-gt6-46-1.png", "assets/images/products/huawei-watch-gt6-46-2.png", "assets/images/products/huawei-watch-gt6-46-3.jpg"],
+    /* Renk seçilince galeride o rengin görseli gösterilir (üretici görselleri). */
+    colorImages: {
+      "Siyah": "assets/images/products/huawei-watch-gt6-46-renk-siyah.png",
+      "Yeşil": "assets/images/products/huawei-watch-gt6-46-renk-yesil.png"
+    },
     desc: "Watch GT 6 46mm, geniş AMOLED ekranı ve olağanüstü batarya ömrüyle uzun süreli aktiviteler için tasarlandı. Bisiklet gücü ölçümü ve çift bantlı konumlandırma sporcular için ideal.",
     specs: [
       { key: "Ekran",      value: "1,47 inç AMOLED, 466 × 466 piksel (317 PPI)" },
@@ -534,6 +544,11 @@ const BASE_PRODUCTS = [
     badgeLabel: "Yeni",
     stock: 10,
     images: ["assets/images/products/huawei-watch-gt6-pro-1.jpg", "assets/images/products/huawei-watch-gt6-pro-2.png"],
+    /* Renk seçilince galeride o rengin görseli gösterilir (üretici görselleri). */
+    colorImages: {
+      "Siyah": "assets/images/products/huawei-watch-gt6-pro-renk-siyah.png",
+      "Kahverengi": "assets/images/products/huawei-watch-gt6-pro-renk-kahverengi.png"
+    },
     desc: "Watch GT 6 Pro, safir kristal ekranı ve titanyum detaylarıyla dayanıklılığı zarafetle birleştirir. EKG desteği ve gelişmiş sağlık sensörleriyle profesyonel takip.",
     specs: [
       { key: "Ekran",      value: "1,47 inç AMOLED, 466 × 466 piksel (317 PPI), safir cam" },
@@ -594,6 +609,12 @@ const BASE_PRODUCTS = [
     badgeLabel: "Çok Satan",
     stock: 10,
     images: ["assets/images/products/huawei-watch-fit4-1.jpg", "assets/images/products/huawei-watch-fit4-2.jpg", "assets/images/products/huawei-watch-fit4-3.jpg"],
+    /* Renk seçilince galeride o rengin görseli gösterilir (üretici görselleri). */
+    colorImages: {
+      "Siyah": "assets/images/products/huawei-watch-fit4-renk-siyah.png",
+      "Mor": "assets/images/products/huawei-watch-fit4-renk-mor.png",
+      "Beyaz": "assets/images/products/huawei-watch-fit4-renk-beyaz.png"
+    },
     desc: "Watch Fit 4, alüminyum gövdesi ve ince yapısıyla gün boyu rahat kullanım sunar. Geniş AMOLED ekranı ve çift bantlı GPS'iyle koşu, bisiklet ve outdoor aktiviteler için ideal.",
     specs: [
       { key: "Ekran",      value: "1,82 inç AMOLED, 480 × 408 piksel (347 PPI), 2000 nit" },
@@ -656,6 +677,11 @@ const BASE_PRODUCTS = [
     badgeLabel: "Yeni",
     stock: 10,
     images: ["assets/images/products/samsung-watch9-40-1.png", "assets/images/products/samsung-watch9-40-2.png", "assets/images/products/samsung-watch9-40-3.png"],
+    /* Renk seçilince galeride o rengin görseli gösterilir (üretici görselleri). */
+    colorImages: {
+      "Siyah": "assets/images/products/samsung-watch9-40-renk-siyah.png",
+      "Bej": "assets/images/products/samsung-watch9-40-renk-bej.png"
+    },
     desc: "Galaxy Watch9, Samsung'un yeni nesil akıllı saati. Super AMOLED ekranı, BioActive sensörü ve Wear OS deneyimiyle sağlık ve verimliliği bileğinize taşır.",
     specs: [
       { key: "Ekran",      value: "1,3 inç (34 mm) Super AMOLED, 480 × 480, safir kristal, 3000 nite kadar" },
@@ -927,6 +953,11 @@ const BASE_PRODUCTS = [
     badgeLabel: null,
     stock: 10,
     images: ["assets/images/products/huawei-freebuds-se3-1.jpg", "assets/images/products/huawei-freebuds-se3-2.jpg", "assets/images/products/huawei-freebuds-se3-3.jpg"],
+    /* Renk seçilince galeride o rengin görseli gösterilir (üretici görselleri). */
+    colorImages: {
+      "Siyah": "assets/images/products/huawei-freebuds-se3-renk-siyah.png",
+      "Bej": "assets/images/products/huawei-freebuds-se3-renk-bej.png"
+    },
     desc: "FreeBuds SE 3, hafif yapısı ve uzun batarya ömrüyle günlük kullanım için tasarlandı. Net çağrı kalitesi ve rahat kulak içi oturuşuyla gün boyu konfor.",
     specs: [
       { key: "Tip",        value: "Kulak içi TWS" },
@@ -1283,6 +1314,11 @@ const BASE_PRODUCTS = [
     badgeLabel: null,
     stock: 10,
     images: ["assets/images/products/samsung-buds4-pro-1.jpg", "assets/images/products/samsung-buds4-pro-2.jpg", "assets/images/products/samsung-buds4-pro-3.jpg"],
+    /* Renk seçilince galeride o rengin görseli gösterilir (üretici görselleri). */
+    colorImages: {
+      "Siyah": "assets/images/products/samsung-buds4-pro-renk-siyah.png",
+      "Beyaz": "assets/images/products/samsung-buds4-pro-renk-beyaz.png"
+    },
     desc: "Galaxy Buds4 Pro, Samsung'un amiral gemisi kulaklığı. Hi-Fi ses, güçlü gürültü engelleme ve 360 Audio ile sürükleyici bir dinleme deneyimi.",
     specs: [
       { key: "Tip",        value: "Kulak içi TWS" },
@@ -1347,6 +1383,12 @@ const BASE_PRODUCTS = [
     badgeLabel: "Yeni",
     stock: 10,
     images: ["assets/images/products/xiaomi-redmi-buds8-1.jpg", "assets/images/products/xiaomi-redmi-buds8-2.jpg"],
+    /* Renk seçilince galeride o rengin görseli gösterilir (üretici görselleri). */
+    colorImages: {
+      "Siyah": "assets/images/products/xiaomi-redmi-buds8-renk-siyah.png",
+      "Beyaz": "assets/images/products/xiaomi-redmi-buds8-renk-beyaz.png",
+      "Yeşil": "assets/images/products/xiaomi-redmi-buds8-renk-yesil.png"
+    },
     desc: "Redmi Buds 8, yeni nesil sürücüsü ve aktif gürültü engellemesiyle Redmi kulaklık ailesinin standart modelini bir üst seviyeye taşıyor.",
     specs: [
       { key: "Tip",        value: "Yarı kulak içi (semi-in-ear) TWS" },
@@ -1407,6 +1449,11 @@ const BASE_PRODUCTS = [
     badgeLabel: "%18 İndirim",
     stock: 10,
     images: ["assets/images/products/xiaomi-redmi-buds8-lite-2.png", "assets/images/products/xiaomi-redmi-buds8-lite-3.jpg"],
+    /* Renk seçilince galeride o rengin görseli gösterilir (üretici görselleri). */
+    colorImages: {
+      "Siyah": "assets/images/products/xiaomi-redmi-buds8-lite-renk-siyah.png",
+      "Beyaz": "assets/images/products/xiaomi-redmi-buds8-lite-renk-beyaz.png"
+    },
     desc: "Redmi Buds 8 Lite, kompakt kılıfı ve rahat oturuşuyla gün boyu taşımaya uygun. Net çağrı kalitesi ve hızlı eşleşme özelliğiyle pratik.",
     specs: [
       { key: "Tip",        value: "Kulak içi TWS" },
@@ -1577,6 +1624,11 @@ const BASE_PRODUCTS = [
     badgeLabel: "%17 İndirim",
     stock: 10,
     images: ["assets/images/products/samsung-25w-adapter-3.png"],
+    /* Renk seçilince galeride o rengin görseli gösterilir (üretici görselleri). */
+    colorImages: {
+      "Siyah": "assets/images/products/samsung-25w-adapter-renk-siyah.png",
+      "Beyaz": "assets/images/products/samsung-25w-adapter-renk-beyaz.png"
+    },
     desc: "Samsung 25W Süper Hızlı Şarj adaptörü, uyumlu Galaxy cihazlarınızı kısa sürede şarj eder. PPS desteğiyle akıllı güç yönetimi sağlar.",
     specs: [
       { key: "Güç",        value: "25W" },

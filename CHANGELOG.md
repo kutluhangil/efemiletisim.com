@@ -3,6 +3,54 @@
 Bu dosya projede yapılan her ekleme, değişiklik ve kaldırmayı kayıt altına alır.
 En yeni kayıtlar en üstte.
 
+## 2026-08-19 (Gemini görselleri siteye bağlandı)
+
+- Feat: Gemini ile üretilen dekoratif görseller projeye eklendi — hero,
+  kategori kartları (saat, kulaklık, aksesuar, ses), hakkımızda mağaza
+  fotoğrafı, boş durum çizimleri (sepet, favoriler, siparişler, arama),
+  404 çizimi, kargo/ödeme şeritleri ve OG görseli. Hepsi `.webp` + `.jpg`/
+  `.png` olarak `assets/images/` altında.
+- Feat: Boş durumlardaki SVG ikonlar 3D çizimlerle değiştirildi
+  (`sepet.html`, `profil.html` sipariş + favori listeleri, `js/products.js`
+  ürün ızgarası). Yeni `.empty-illustration` sınıfı `css/main.css` içinde.
+- Feat: `404.html` eklendi — Vercel statik dağıtımında bulunamayan yollar için
+  sunulur. Sayfa herhangi bir derinlikten sunulabildiği için `<base href="/">`
+  ile göreli yollar kökten çözülüyor.
+- Change: `dev-server.js` artık bulunamayan yol için düz metin yerine
+  `404.html` döndürüyor (durum kodu yine 404).
+- Not: `banner-kargo` ve `banner-odeme` şeritleri ile `assets/images/og-image.*`
+  henüz hiçbir sayfaya bağlanmadı. OG görselinde logo/başlık yok; meta
+  etiketleri markalı `assets/logos/og-image.jpg` görselini göstermeye devam
+  ediyor.
+
+## 2026-08-19 (renk seçimi görselleri + Gemini prompt'ları)
+
+### Renk seçince o rengin görseli açılıyor
+
+- Feat: Ürün detayında renk chip'ine tıklanınca galerinin o rengin görselini
+  göstermesi için `colorImages` haritası 10 üründe dolduruldu (üreticinin
+  kendi CDN'i): Huawei Watch GT 6 46mm, GT 6 Pro (Siyah/Kahverengi),
+  Watch Fit 4, FreeBuds SE 3, Samsung Galaxy Watch9 40mm, Galaxy Buds4 Pro,
+  25W adaptör, Apple Watch S10 42mm titanyum, Xiaomi Redmi Buds 8 ve
+  Buds 8 Lite. Toplam 20 yeni renk görseli eklendi.
+- Fix: `showColorImage()` artık harita var ama seçilen rengin karşılığı yoksa
+  varsayılan görsele dönüyor; eskiden ekranda önceki rengin görseli asılı
+  kalıyordu.
+- Not: Bir üründe renk görseli ya TÜM renkleri kapsar ya da hiç eklenmez.
+  JBL (7 ürün) ve kalan Xiaomi (4 ürün) için üreticinin sitesi bot korumalı /
+  renk render'ı yayınlamıyor. Galaxy Watch9 44mm "Gümüş" resmi render'ı yeşil
+  kayışla geldiği için (yanlış renk kuralı), Apple S10 46mm "Gümüş" varyantının
+  Apple karşılığı belirsiz olduğu için bu iki ürün eksik bırakıldı.
+
+### Gemini görsel prompt'ları yeniden yazıldı
+
+- Change: `docs/gemini-gorsel-promptlari.md` sıfırdan yazıldı. Eski krem
+  zeminli çizim (line-art) yönü, e-ticaret vitrinine uymadığı için bırakıldı;
+  yerine koyu lacivert zeminli, stüdyo ışıklı premium ürün fotoğrafı yönü
+  geldi. Yeni "Aksesuarlar" ve "Ses & Diğer" kategorileri için prompt eklendi.
+- Feat: Aksesuar ve Ses kategori kartlarına `<img>` etiketi eklendi; dosya
+  yoksa gradyan + ikon fallback'ine düşüyor.
+
 ## 2026-08-19 (katalog görsel denetimi)
 
 ### Gerçeği yansıtmayan ürün görselleri temizlendi

@@ -205,7 +205,7 @@
           </div>
           <div id="orders-list">
             <div class="empty-state">
-              <div class="icon"><svg class="icon" viewBox="0 0 24 24" style="width:3rem;height:3rem"><path d="M3 7l9-4 9 4-9 4-9-4Z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/></svg></div>
+              <img class="empty-illustration" src="assets/images/empty-orders.webp" alt="Sipariş bulunmuyor çizimi" width="160" height="160" loading="lazy" onerror="this.remove()">
               <h3>Henüz Siparişiniz Yok</h3>
               <p>İlk siparişinizi oluşturun!</p>
               <a href="urunler.html" class="btn btn-primary"><svg class="icon" viewBox="0 0 24 24"><path d="M4 9l1-5h14l1 5"/><path d="M4 9a2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0"/><path d="M5 9v10h14V9"/></svg> Alışverişe Başla</a>
@@ -559,7 +559,7 @@ function renderOrders() {
   if (orders.length === 0) {
     container.innerHTML = `
       <div class="empty-state">
-        <div class="icon"><svg class="icon" viewBox="0 0 24 24" style="width:3rem;height:3rem"><path d="M3 7l9-4 9 4-9 4-9-4Z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/></svg></div>
+        <img class="empty-illustration" src="assets/images/empty-orders.webp" alt="Sipariş bulunmuyor çizimi" width="160" height="160" loading="lazy" onerror="this.remove()">
         <h3>Henüz Siparişiniz Yok</h3>
         <p>İlk siparişinizi oluşturun!</p>
         <a href="urunler.html" class="btn btn-primary"><svg class="icon" viewBox="0 0 24 24"><path d="M4 9l1-5h14l1 5"/><path d="M4 9a2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0"/><path d="M5 9v10h14V9"/></svg> Alışverişe Başla</a>
@@ -630,7 +630,7 @@ function renderFavorites() {
   if (favProducts.length === 0) {
     grid.innerHTML = `
       <div class="empty-state" style="grid-column:1/-1">
-        <div class="icon"><svg class="icon" viewBox="0 0 24 24" style="width:3rem;height:3rem"><path d="M12 21s7-6.5 7-11a7 7 0 1 0-14 0c0 4.5 7 11 7 11Z"/></svg></div>
+        <img class="empty-illustration" src="assets/images/empty-favorites.webp" alt="Favori ürün yok çizimi" width="160" height="160" loading="lazy" onerror="this.remove()">
         <h3>Favori Ürününüz Yok</h3>
         <p>Beğendiğiniz ürünleri favorilere ekleyin.</p>
         <a href="urunler.html" class="btn btn-primary"><svg class="icon" viewBox="0 0 24 24"><path d="M4 9l1-5h14l1 5"/><path d="M4 9a2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0"/><path d="M5 9v10h14V9"/></svg> Ürünlere Bak</a>
