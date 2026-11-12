@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 440" width="1200" height="440" role="img" aria-label="Efem İletişim — an e-commerce store for smartwatches, earbuds and accessories">
+<style>
+.bg{animation:bg 12s linear infinite}
+@keyframes bg{0%,8%{fill:#eef3f8}28%{fill:#24405e}48%,80%{fill:#060b12}90%,100%{fill:#eef3f8}}
+.ink{animation:ink 12s linear infinite}
+@keyframes ink{0%,8%{fill:#142236}28%{fill:#eef5ff}48%,80%{fill:#e6eef8}90%,100%{fill:#142236}}
+.rule{animation:rule 12s linear infinite}
+@keyframes rule{0%,8%{stroke:#14223633}28%{stroke:#eef5ff33}48%,80%{stroke:#e6eef833}90%,100%{stroke:#14223633}}
+.panel{animation:panel 12s linear infinite}
+@keyframes panel{0%,8%{fill:#14223612}28%{fill:#eef5ff12}48%,80%{fill:#e6eef812}90%,100%{fill:#14223612}}
+.muted{opacity:.72}
+.stars{animation:stars 12s linear infinite}
+@keyframes stars{0%,8%{opacity:0}28%{opacity:.25}48%,80%{opacity:.9}90%,100%{opacity:0}}
+@keyframes tw{0%,100%{opacity:1}50%{opacity:.25}}
+.lit{filter:drop-shadow(0 0 4px currentColor)}
+.pulse{animation:pulse 2.8s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
+@keyframes spin{0%{transform:scaleX(1)}50%{transform:scaleX(0)}100%{transform:scaleX(-1)}}
+@keyframes ping{0%{transform:scale(.6);opacity:1}100%{transform:scale(3.2);opacity:0}}
+@keyframes dash{to{stroke-dashoffset:-20}}
+@keyframes grow{0%{transform:scaleY(.08)}35%,80%{transform:scaleY(1)}100%{transform:scaleY(.08)}}
+@keyframes draw{0%{stroke-dashoffset:700}45%,80%{stroke-dashoffset:0}100%{stroke-dashoffset:-700}}
+@keyframes blink{50%{opacity:0}}
+@keyframes feed{0%{transform:translateY(150px);opacity:0}15%{opacity:1}85%{opacity:1}100%{transform:translateY(-30px);opacity:0}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes slide{to{transform:translateX(100px)}}
+@keyframes eq{from{transform:scaleY(.15)}to{transform:scaleY(1)}}
+@keyframes drop{0%,6%{transform:scaleY(0);opacity:0}16%,88%{transform:scaleY(1);opacity:1}96%,100%{transform:scaleY(0);opacity:0}}
+@keyframes gauge{0%,10%{stroke-dashoffset:390}40%,85%{stroke-dashoffset:110}100%{stroke-dashoffset:390}}
+@keyframes lift{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes sweep{0%{transform:skewX(-18deg) translateX(0)}60%,100%{transform:skewX(-18deg) translateX(788px)}}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<rect class="bg" width="1200" height="440" rx="28" fill="#eef3f8"/>
+<g font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="15" letter-spacing="2.4"><text class="ink muted" x="64" y="104">E-COMMERCE · VANILLA JS + FIREBASE</text></g>
+<text class="ink" x="60" y="236" font-family="'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif" font-style="italic" font-size="78" letter-spacing="-1">Efem İletişim.</text>
+<text class="ink muted" x="64" y="300" font-family="'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif" font-size="20">A fast storefront for smartwatches, earbuds and accessories.</text>
+<line class="rule" x1="64" y1="372" x2="1136" y2="372"/>
+<g font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13" letter-spacing="1.8">
+  <text class="ink muted" x="64" y="404">CATALOGUE · CART · PAYTR</text>
+  <text class="ink muted" x="600" y="404" text-anchor="middle">FIREBASE AUTH + FIRESTORE</text>
+  <text class="ink muted" x="1136" y="404" text-anchor="end">ADMIN PANEL · SEO</text>
+</g>
+<rect class="panel rule" x="652" y="92" width="488" height="262" rx="24"/>
+<g class="stars"><circle cx="1024.1" cy="143.9" r="1.6" fill="#fff" style="animation:tw 2.8s ease-in-out 0.1s infinite"/><circle cx="976.6" cy="146.7" r="0.7" fill="#fff" style="animation:tw 2.5s ease-in-out 1.9s infinite"/><circle cx="858.3" cy="203.8" r="0.8" fill="#fff" style="animation:tw 3s ease-in-out 0.4s infinite"/><circle cx="707.8" cy="321.4" r="1.6" fill="#fff" style="animation:tw 2.7s ease-in-out 1.6s infinite"/><circle cx="917.7" cy="298.1" r="1.2" fill="#fff" style="animation:tw 2.2s ease-in-out 0.5s infinite"/><circle cx="1102.2" cy="290.6" r="1.4" fill="#fff" style="animation:tw 3s ease-in-out 0.7s infinite"/><circle cx="771.8" cy="130.7" r="1.3" fill="#fff" style="animation:tw 1.9s ease-in-out 1.7s infinite"/><circle cx="794.3" cy="220" r="1" fill="#fff" style="animation:tw 2.9s ease-in-out 0.3s infinite"/><circle cx="942.2" cy="311.9" r="1.1" fill="#fff" style="animation:tw 3.8s ease-in-out 1.1s infinite"/><circle cx="958.6" cy="216.8" r="1.6" fill="#fff" style="animation:tw 3.3s ease-in-out 0.4s infinite"/><circle cx="786.4" cy="179.3" r="0.9" fill="#fff" style="animation:tw 2.1s ease-in-out 0.2s infinite"/><circle cx="1010.9" cy="159" r="1.1" fill="#fff" style="animation:tw 2.3s ease-in-out 1.6s infinite"/><circle cx="916" cy="114.4" r="1.6" fill="#fff" style="animation:tw 3.6s ease-in-out 1.1s infinite"/><circle cx="880.6" cy="191" r="1.6" fill="#fff" style="animation:tw 1.6s ease-in-out 1.8s infinite"/><circle cx="817.2" cy="123.5" r="1.3" fill="#fff" style="animation:tw 2.5s ease-in-out 0.8s infinite"/><circle cx="743.9" cy="223.1" r="1.2" fill="#fff" style="animation:tw 2.8s ease-in-out 1.5s infinite"/><circle cx="671.2" cy="152.9" r="1.1" fill="#fff" style="animation:tw 3.3s ease-in-out 0.4s infinite"/><circle cx="741" cy="149.3" r="1" fill="#fff" style="animation:tw 1.7s ease-in-out 0.1s infinite"/><circle cx="1014.9" cy="335.6" r="1.3" fill="#fff" style="animation:tw 2.3s ease-in-out 1.8s infinite"/><circle cx="789" cy="221.7" r="1.6" fill="#fff" style="animation:tw 2.2s ease-in-out 0.4s infinite"/><circle cx="747.1" cy="223.3" r="1" fill="#fff" style="animation:tw 2.7s ease-in-out 1.6s infinite"/><circle cx="858.3" cy="225.2" r="0.8" fill="#fff" style="animation:tw 2.3s ease-in-out 0.2s infinite"/><circle cx="1033.2" cy="238.8" r="0.9" fill="#fff" style="animation:tw 3.5s ease-in-out 0.6s infinite"/><circle cx="770.3" cy="261" r="1.4" fill="#fff" style="animation:tw 1.8s ease-in-out 0.4s infinite"/><circle cx="698.8" cy="223.2" r="1.8" fill="#fff" style="animation:tw 2.3s ease-in-out 1.6s infinite"/><circle cx="903.1" cy="323.1" r="1.7" fill="#fff" style="animation:tw 3.9s ease-in-out 1.6s infinite"/></g>
+<defs><linearGradient id="sh" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".28"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient><clipPath id="gc"><rect x="652" y="92" width="488" height="262" rx="24"/></clipPath></defs><g style="animation:lift 6s ease-in-out 0s infinite"><rect x="686" y="114" width="132" height="104" rx="14" fill="#000" fill-opacity=".25" stroke="#fff" stroke-opacity=".16"/>
+<rect x="696" y="124" width="112" height="58" rx="9" fill="#3b82f6" fill-opacity=".85"/>
+<rect x="696" y="190" width="62.2" height="8" rx="4" fill="#fff" fill-opacity=".8"/><rect x="696" y="203" width="34" height="6" rx="3" fill="#fff" fill-opacity=".45"/></g><g style="animation:lift 6s ease-in-out -1s infinite"><rect x="838" y="114" width="132" height="104" rx="14" fill="#000" fill-opacity=".25" stroke="#fff" stroke-opacity=".16"/>
+<rect x="848" y="124" width="112" height="58" rx="9" fill="#f59e0b" fill-opacity=".85"/>
+<rect x="848" y="190" width="62.3" height="8" rx="4" fill="#fff" fill-opacity=".8"/><rect x="848" y="203" width="34" height="6" rx="3" fill="#fff" fill-opacity=".45"/></g><g style="animation:lift 6s ease-in-out -2s infinite"><rect x="990" y="114" width="132" height="104" rx="14" fill="#000" fill-opacity=".25" stroke="#fff" stroke-opacity=".16"/>
+<rect x="1000" y="124" width="112" height="58" rx="9" fill="#10b981" fill-opacity=".85"/>
+<rect x="1000" y="190" width="88.3" height="8" rx="4" fill="#fff" fill-opacity=".8"/><rect x="1000" y="203" width="34" height="6" rx="3" fill="#fff" fill-opacity=".45"/></g><g style="animation:lift 6s ease-in-out -3s infinite"><rect x="686" y="236" width="132" height="104" rx="14" fill="#000" fill-opacity=".25" stroke="#fff" stroke-opacity=".16"/>
+<rect x="696" y="246" width="112" height="58" rx="9" fill="#f59e0b" fill-opacity=".85"/>
+<rect x="696" y="312" width="92.4" height="8" rx="4" fill="#fff" fill-opacity=".8"/><rect x="696" y="325" width="34" height="6" rx="3" fill="#fff" fill-opacity=".45"/></g><g style="animation:lift 6s ease-in-out -4s infinite"><rect x="838" y="236" width="132" height="104" rx="14" fill="#000" fill-opacity=".25" stroke="#fff" stroke-opacity=".16"/>
+<rect x="848" y="246" width="112" height="58" rx="9" fill="#10b981" fill-opacity=".85"/>
+<rect x="848" y="312" width="54.9" height="8" rx="4" fill="#fff" fill-opacity=".8"/><rect x="848" y="325" width="34" height="6" rx="3" fill="#fff" fill-opacity=".45"/></g><g style="animation:lift 6s ease-in-out -5s infinite"><rect x="990" y="236" width="132" height="104" rx="14" fill="#000" fill-opacity=".25" stroke="#fff" stroke-opacity=".16"/>
+<rect x="1000" y="246" width="112" height="58" rx="9" fill="#3b82f6" fill-opacity=".85"/>
+<rect x="1000" y="312" width="89" height="8" rx="4" fill="#fff" fill-opacity=".8"/><rect x="1000" y="325" width="34" height="6" rx="3" fill="#fff" fill-opacity=".45"/></g>
+<g clip-path="url(#gc)"><rect x="512" y="92" width="120" height="262" fill="url(#sh)" transform="skewX(-18)" style="animation:sweep 4s ease-in-out infinite"/></g>
+</svg>

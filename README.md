@@ -1,113 +1,74 @@
 <div align="center">
-  <img src="assets/logos/logo-full.png" alt="efem iletişim" width="220">
 
-  <h1>efemiletisim.com</h1>
-  <p><strong>Akıllı saat, kulaklık ve teknoloji aksesuarları mağazası</strong> — Vanilla JS + Firebase ile inşa edilmiş, statik hosting üzerinde çalışan hızlı bir e-ticaret sitesi.</p>
+<img src="docs/media/hero.svg" alt="Efem İletişim — an e-commerce store for smartwatches, earbuds and accessories" width="100%">
 
-  <p>
-    <img src="https://img.shields.io/badge/JavaScript-Vanilla-F7DF1E?style=flat-square&logo=javascript&logoColor=black" alt="Vanilla JS">
-    <img src="https://img.shields.io/badge/Firebase-Auth%20%2B%20Firestore-FFCA28?style=flat-square&logo=firebase&logoColor=black" alt="Firebase">
-    <img src="https://img.shields.io/badge/Hosting-Vercel-000000?style=flat-square&logo=vercel" alt="Vercel">
-    <img src="https://img.shields.io/badge/Payment-PayTR-1B3C87?style=flat-square" alt="PayTR">
-    <img src="https://img.shields.io/badge/license-Proprietary-lightgrey?style=flat-square" alt="License">
-  </p>
+<p>
+  <a href="https://efemiletisim.com/"><img alt="Live" src="https://img.shields.io/badge/live-efemiletisim.com-3b82f6?style=for-the-badge&labelColor=060b12"></a>
+  <img alt="Vanilla JS" src="https://img.shields.io/badge/JavaScript-vanilla-f59e0b?style=for-the-badge&labelColor=060b12">
+  <img alt="Firebase" src="https://img.shields.io/badge/Firebase-auth%20%2B%20Firestore-10b981?style=for-the-badge&labelColor=060b12">
+  <img alt="PayTR" src="https://img.shields.io/badge/payments-PayTR-3b82f6?style=for-the-badge&labelColor=060b12">
+</p>
+
+<p><em>A fast e-commerce store for smartwatches, earbuds and tablet accessories,<br>
+built with vanilla JavaScript and Firebase on static hosting.</em></p>
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/home.jpg" alt="Home"></td>
+    <td width="50%"><img src="docs/screenshots/products.jpg" alt="Product listing"></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/product-detail.jpg" alt="Product detail"></td>
+    <td width="50%"><img src="docs/screenshots/cart.jpg" alt="Cart"></td>
+  </tr>
+</table>
+
 </div>
 
----
+<img src="docs/media/divider.svg" width="100%" alt="">
 
-## Ekran Görüntüleri
+## Features
 
-| Ana Sayfa | Ürün Listeleme |
+| | |
 |---|---|
-| ![Ana Sayfa](docs/screenshots/home.jpg) | ![Ürünler](docs/screenshots/products.jpg) |
+| **Catalogue** | Filter by category (smartwatches, earbuds, accessories, audio) and brand, price range, rating, and sort. |
+| **Live search** | Instant product and brand search from the navigation bar. |
+| **Product detail** | Gallery, specification table, related products and stock status. |
+| **Cart and checkout** | Quantity updates, coupon support, address and invoice forms, and a PayTR iFrame payment. Card details are never collected on the site; the amount is calculated on the server and the result is written from PayTR's signed callback. |
+| **Accounts** | Firebase Authentication with email verification, order and favourite history in Firestore. |
+| **Account panel** | Orders, favourites, addresses and profile, including account deletion. |
+| **Admin panel** | Product, order and settings management. |
+| **Single source of truth** | Brand, contact and legal details all come from one config file. |
+| **SEO and legal** | A dynamic sitemap from the live catalogue, schema.org markup, privacy (KVKK), distance-selling and returns pages. |
 
-| Ürün Detay | Sepet |
-|---|---|
-| ![Ürün Detay](docs/screenshots/product-detail.jpg) | ![Sepet](docs/screenshots/cart.jpg) |
-
----
-
-## Özellikler
-
-- **Ürün kataloğu** — kategori (akıllı saat / kulaklık / aksesuar / ses & diğer) ve marka bazlı filtreleme, fiyat aralığı, minimum puan, sıralama (fiyat/puan/yeni/öne çıkan)
-- **Canlı arama** — navbar üzerinden anlık ürün/marka arama dropdown'u
-- **Ürün detay** — galeri, teknik özellik tablosu, ilgili ürünler, stok durumu
-- **Favoriler** — localStorage tabanlı, profil sayfasında listeleniyor
-- **Sepet** — miktar güncelleme, kupon kodu desteği (altyapı hazır, kampanya aktif edilmeyi bekliyor)
-- **Ödeme akışı** — adres/fatura formu + PayTR iFrame ödeme formu; kart bilgisi sitede toplanmaz, tutar sunucuda hesaplanır, sonuç PayTR'nin imzalı bildiriminden yazılır (`api/`)
-- **Üyelik** — Firebase Authentication (e-posta doğrulama dahil), Firestore'da sipariş/favori geçmişi
-- **Hesap paneli** — sipariş geçmişi, favoriler, adres ve profil yönetimi
-- **Admin paneli** (`admin.html`) — ürün/sipariş yönetimi arayüzü
-- **Kurumsal tek-kaynak yapı** — tüm marka/iletişim/yasal bilgiler `js/site-config.js`'ten besleniyor, sayfalarda tekrar yok
-- **SEO** — dinamik `sitemap.xml` (canlı katalogdan; satıştan kaldırılan ürünler girmez), `robots.txt`, Organization/Product schema.org enjeksiyonu
-- **Yasal sayfalar** — KVKK/gizlilik, mesafeli satış sözleşmesi, iptal/iade
-- **Güvenlik başlıkları** — CSP, HSTS, X-Frame-Options vb. `vercel.json` üzerinden
-- **Mikro etkileşimler** — magnetic hover butonlar, scroll-reveal, sayaç animasyonları
-
-## Teknoloji Yığını
-
-| Katman | Teknoloji |
-|---|---|
-| Frontend | Vanilla HTML5 / CSS3 / JavaScript (framework yok, build adımı yok) |
-| Kimlik doğrulama & veri | Firebase Authentication + Firestore |
-| Ödeme | **PayTR iFrame API** — Vercel Functions (`api/`), Node.js, bağımlılıksız HMAC-SHA256 imzalama |
-| Hosting | Vercel (`vercel.json`) + Firebase Hosting yapılandırması (`firebase.json`) |
-| Diğer | localStorage (sepet/favoriler), schema.org JSON-LD, CSP güvenlik başlıkları |
-
-## Proje Yapısı
-
-```
-├─ index.html, urunler.html, urun-detay.html,
-│  sepet.html, odeme.html, hesap.html, profil.html,
-│  hakkimizda.html, admin.html          → sayfalar (routing nedeniyle kökte)
-├─ css/                                  → main / components / pages
-├─ js/
-│  ├─ site-config.js                     → TEK kaynak: marka, iletişim, yasal künye
-│  ├─ data.js                            → ürün kataloğu
-│  ├─ products.js                        → filtre, arama, favori, ürün kartı
-│  ├─ cart.js                            → sepet, kupon, toplam hesaplama
-│  ├─ payment.js                         → ödeme API istemcisi (kart verisi toplamaz)
-│  ├─ auth.js / firebase-auth.js         → üyelik, Firestore sipariş/favori
-│  └─ main.js                            → navbar, toast, animasyonlar, SEO schema
-├─ api/                                  → Vercel Functions (sunucu tarafı ödeme)
-│  ├─ _lib/                              → PayTR istemcisi, sipariş/fiyat mantığı, Firestore
-│  ├─ payment/                           → config · initialize · notify
-│  └─ order/                             → eft · status
-├─ scripts/                              → sync-catalog · test-payment-lib · test-payment-flow
-├─ assets/                               → images, icons, logos
-├─ docs/                                 → RAPOR.md, IYZICO-DENETIM-RAPORU.md,
-│                                          PAYTR-ENTEGRASYON.md, ARKADAS-YAPILACAKLAR.md
-├─ vercel.json / firebase.json           → hosting + güvenlik başlıkları
-├─ .env.example                          → sunucu ortam değişkenleri şablonu
-└─ robots.txt              (sitemap.xml dinamik: api/sitemap.js)
+```mermaid
+flowchart LR
+  V[Visitor] --> CAT[Catalogue · search · filters]
+  CAT --> CART[Cart] --> CO[Checkout form]
+  CO --> API[api/ · server-side amount] --> PT[PayTR iFrame]
+  PT -- signed callback --> API --> FS[(Firestore · orders)]
+  AUTH[Firebase Auth] --> ACC[Account panel]
+  FS --> ADM[Admin panel]
 ```
 
-## Kurulum
+<img src="docs/media/divider.svg" width="100%" alt="">
 
-Vitrin tarafında build adımı yok. Ödeme API'si (`api/`) Node.js gerektirir:
+## Türkçe özet
 
-```bash
-npm install
+**Efem İletişim**, akıllı saat, kulaklık ve tablet aksesuarları satan hızlı bir e-ticaret sitesi. Vanilla JavaScript ve Firebase ile yazıldı, statik hosting üzerinde çalışıyor. Katalog ve filtreler, canlı arama, sepet, PayTR ile güvenli ödeme, e-posta doğrulamalı üyelik, hesap paneli ve yönetim paneli içeriyor. Bu depo, sitenin asıl deposunun bir fork'u; adres senkronu, üyelik ve sipariş eksikleri, admin paneli ve karanlık mod gibi geliştirmelerde katkım var.
+
+<img src="docs/media/divider.svg" width="100%" alt="">
+
+## Development
+
+```sh
+cp .env.example .env
+node dev-server.js            # local static server with API routes
+npm run sync-catalog          # sync the product catalogue
 ```
-
-```bash
-node dev-server.js
-```
-
-Ardından `http://localhost:3000` adresini açın — `dev-server.js` hem statik dosyaları servis eder hem de `/api/*` isteklerini Vercel Functions ile aynı imzayla çalıştırır. Ödeme kütüphanesinin birim testleri: `npm run test:payment`.
-
-Firebase bağlantısı için `js/firebase-config.js` içindeki proje anahtarlarını kendi Firebase projenizle güncelleyin. Ödeme için gereken sunucu değişkenleri: `.env.example`.
-
-## Durum
-
-Gerçek **PayTR iFrame API** entegrasyonu yazıldı: tutar sunucuda hesaplanır, sipariş sunucuda açılır, ödeme sonucu PayTR'nin imzalı bildiriminden yazılır; kart numarası/CVV bu projenin hiçbir katmanına girmez.
-
-Ortam değişkenleri (`.env.example`) girilene kadar kart ödemesi **kapalıdır** — checkout bu durumda EFT/havale sunar ve hiçbir koşulda "ödeme başarılı" taklidi yapılmaz.
-
-Canlıya çıkış adımları: `docs/PAYTR-ENTEGRASYON.md` · Denetim bulguları: `docs/IYZICO-DENETIM-RAPORU.md`
-
----
 
 <div align="center">
-  <sub>© 2026 efemiletisim.com — Efem İletişim Teknoloji San. ve Tic. Ltd. Şti.</sub>
+<br>
+<a href="https://github.com/kutluhangil"><img src="docs/media/signature.svg" width="100%" alt="Contributions by kutluhangil"></a>
+<sub>Fork of <a href="https://github.com/cemalcingirlar/efemiletisim.com">cemalcingirlar/efemiletisim.com</a> · contributions by kutluhangil.</sub>
 </div>
